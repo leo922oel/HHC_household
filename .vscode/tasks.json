@@ -1,0 +1,35 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Python Code",
+            "type": "process",
+            "command": "${config:python.pythonPath}",
+            "args": [
+                "${file}"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+			"label": "Run R code",
+			"type": "shell",
+			"command": "D:\\R\\R-4.1.0\\bin\\x64\\rterm.exe",
+			"args": [
+				//"--no-restore",
+				//"--no-save",
+				"--no-site-file",
+				"--quiet",
+				"--file=${file}"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+    ]
+}
