@@ -1,16 +1,15 @@
-from os import stat
 import numpy as np
 import numpy
 import random as rd
 import math
 from scipy.stats import expon
 import matplotlib.pyplot as plt
-from numba import cuda
 import time
-import cupy as cp
+import multiprocessing as mp
 import sys
 
 hh_total = int(sys.argv[2])
+hh_total = 10
 times = int(sys.argv[3])
 
 hh_size = 3
@@ -21,8 +20,7 @@ trans_hh = 1 / dur_infect
 nhh_ratio = 0.18
 trans_nhh = trans_hh * nhh_ratio
 mask_eff = 0.8
-t_end = 25
-
+t_end = 90
 
 
 class Outp:
@@ -57,26 +55,29 @@ def Init_case(Outp, init_inf):
     Outp.R[0] = np.sum(Y == 2)
     return Y
 
-@cuda.jit
-def gpu_rbinom(type, p, container):
-    row = cuda.threadIdx.x + cuda.blockDim.x * cuda.blockIdx.x
-    # col = cuda.threadIdx.y + cuda.blockDim.x * cuda.blockIdx.y
 
-    if row < container.shape[0]:
-        # for i in range(hh_total):
-        container[row] = np.random.binomial(1, p=p, size=3)
+def multiproc_binom(type, sub_Y, param):
+    n_I = np.sum(sub_Y == 1)
+    p_ = np.zeros(len(sub_Y))
+    if type in [1, 2]:
+        for i in range(len(sub_Y)):
+            sum = np.sum(sub_Y[i] == 1)
+            if type == 1:
+                p_[i] = expon.cdf(1, scale=1/(param * sum)) if param * sum != 0 else 0
+            else:
+                p_[i] = expon.cdf(1, scale=1/(param * (n_I - sum))) if param * (n_I - sum) != 0 else 0
+    elif type in [3, 4]:
+        for i in range(len(sub_Y)):
+            sum = np.sum(sub_Y[i] == 1)
+            if type == 3:
+                p_[i] = expon.cdf(1/gamma_rate, scale=1/(param * sum)) if param * sum != 0 else 0
+            else:
+                p_[i] = expon.cdf(1/gamma_rate, scale=1/(param * (n_I - sum))) if param * (n_I - sum) != 0 else 0
 
-@cuda.jit
-def gpu_where(Y, tmp1, tmp2, t):
-    row = cuda.threadIdx.x + cuda.blockDim.x * cuda.blockIdx.x
-    col = cuda.threadIdx.y + cuda.blockDim.y * cuda.blockIdx.y
+    result = np.random.binomial(1, p_, [hh_size, len(sub_Y)])
 
-    # result[row][col] = np.where(Y[row][col] != 0, 0, tmp1[row][col])
-    if row < Y.shape[0] and col < Y.shape[1]:
-        tmp1[row][col] = 0 if (Y[row][col] != 0) else tmp1[row][col]
-        if t == 2:
-            # result[row][col] = np.where(tmp2[row][col] == 1, 0, result[row][col])
-            tmp1[row][col] = 0 if (tmp2[row][col] == 1) else tmp1[row][col]
+    return result.T
+    
 
 def Sim(goal, Outp, Y):
     for t in range(t_end):
@@ -108,57 +109,26 @@ def Sim(goal, Outp, Y):
                 beta_hh = ct_hh * trans_hh
                 beta_nhh = (ct_nhh * trans_nhh / pop) * mask_eff
 
-        if t == 1:
-            printLog(1, beta_hh, beta_nhh)
-        if t == t_end//2 + 1:
-            printLog(3, beta_hh, beta_nhh)
+        # if t == 1:
+            # printLog(1, beta_hh, beta_nhh)
+        # if t == t_end//2 + 1:
+            # printLog(3, beta_hh, beta_nhh)
         
-        inc_hh = []
-        inc_nhh = []
-        rt_hh = []
-        rt_nhh = []
-        n_I = np.sum(Y == 1)
+        # tasks = np.split(Y, 10, axis=0)
+        # pool = mp.pool.Pool(processes=10)
+        # results = pool.map(multiproc_binom, tasks)
 
-        for i in range(hh_total):
-            P = expon.cdf(1, scale=1/(beta_hh*np.sum(Y[i] == 1))) if beta_hh*np.sum(Y[i] == 1) != 0 else 0
-            inc_hh.append(np.random.binomial(1, p=P, size=len(Y[i])))
-            P = expon.cdf(1, scale=1/(beta_nhh*(n_I - np.sum(Y[i] == 1)))) if beta_nhh*(n_I - np.sum(Y[i] == 1)) != 0 else 0
-            inc_nhh.append(np.random.binomial(1, p=P, size=len(Y[i])))
-            P = expon.cdf(1/gamma_rate, scale=1/(beta_hh*np.sum(Y[i] == 1))) if beta_hh*np.sum(Y[i] == 1) != 0 else 0
-            rt_hh.append(np.random.binomial(1, p=P, size=len(Y[i])))
-            P = expon.cdf(1/gamma_rate, scale=1/(beta_nhh*(n_I - np.sum(Y[i] == 1)))) if beta_nhh*(n_I - np.sum(Y[i] == 1)) != 0 else 0
-            rt_nhh.append(np.random.binomial(1, p=P, size=len(Y[i])))
+        inc_hh = multiproc_binom(1, Y, beta_hh)
+        inc_nhh = multiproc_binom(2, Y, beta_nhh)
+        rt_hh = multiproc_binom(3, Y, beta_hh)
+        rt_nhh = multiproc_binom(4, Y, beta_nhh)
 
-        Y_device = cuda.to_device(Y)
-        inc_hh_device = cuda.to_device(inc_hh)
-        inc_nhh_device = cuda.to_device(inc_nhh)
-        rt_hh_device = cuda.to_device(rt_hh)
-        rt_nhh_device = cuda.to_device(rt_nhh)
-
-        threads_per_block = (16, 16)
-        blocks_per_grid_x = int(math.ceil(Y_device.shape[0] / threads_per_block[0]))
-        blocks_per_grid_y = int(math.ceil(Y_device.shape[1] / threads_per_block[1]))
-        blocks_per_grid = (blocks_per_grid_x, blocks_per_grid_y)
-        #result = cuda.device_array((hh_total, hh_size))
-        gpu_where[blocks_per_grid, threads_per_block] (Y_device, inc_hh_device, inc_hh_device, 1)
-        inc_hh = inc_hh_device.copy_to_host()
-        #result = cuda.device_array((hh_total, hh_size))
-        gpu_where[blocks_per_grid, threads_per_block] (Y_device, inc_nhh_device, inc_hh_device, 2)
-        inc_nhh = inc_nhh_device.copy_to_host()
-        #result = cuda.device_array((hh_total, hh_size))
-        gpu_where[blocks_per_grid, threads_per_block] (Y_device, rt_hh_device, rt_hh_device, 1)
-        rt_hh =rt_hh_device.copy_to_host()
-        #result = cuda.device_array((hh_total, hh_size))
-        gpu_where[blocks_per_grid, threads_per_block] (Y_device, rt_nhh_device, rt_hh_device, 2)
-        rt_nhh = rt_nhh_device.copy_to_host()
-        cuda.synchronize()
-
-        # inc_hh = np.where(Y != 0, 0, inc_hh)
-        # inc_nhh = np.where(Y != 0, 0, inc_nhh)
-        # inc_nhh = np.where(inc_hh == 1, 0, inc_nhh)
-        # rt_hh = np.where(Y != 0, 0, rt_hh)
-        # rt_nhh = np.where(Y != 0, 0, rt_nhh)
-        # rt_nhh = np.where(rt_hh == 1, 0, rt_nhh)
+        inc_hh = np.where(Y != 0, 0, inc_hh)
+        inc_nhh = np.where(Y != 0, 0, inc_nhh)
+        inc_nhh = np.where(inc_hh == 1, 0, inc_nhh)
+        rt_hh = np.where(Y != 0, 0, rt_hh)
+        rt_nhh = np.where(Y != 0, 0, rt_nhh)
+        rt_nhh = np.where(rt_hh == 1, 0, rt_nhh)
 
         recover = np.random.binomial(1, expon.cdf(1, scale=1/gamma_rate), pop)
         recover = recover.reshape(hh_total, hh_size)
@@ -181,17 +151,12 @@ def Sim(goal, Outp, Y):
         Outp.I[t + 1] = np.sum(Y == 1)
         Outp.R[t + 1] = np.sum(Y == 2)
 
-        # Outp.inf_hh_0[t + 1] = np.sum(Y == 1, axis=0)[0]
-        # Outp.inf_hh_0[t + 1] += np.sum(Y == 2, axis=0)[0]
-        # Outp.inf_hh_1[t + 1] = np.sum(Y == 1, axis=0)[1]
-        # Outp.inf_hh_1[t + 1] += np.sum(Y == 2, axis=0)[1]
-        # Outp.inf_hh_2[t + 1] = np.sum(Y == 1, axis=0)[2]
-        # Outp.inf_hh_2[t + 1] += np.sum(Y == 2, axis=0)[2]
 
 def printLog(wave, beta_hh, beta_nhh):
     print(f'===transmission rate, survey wave {wave}===')
     print("household = %.2e" % beta_hh)
     print("non-household = %.2e" % beta_nhh)
+
 
 def plot_result(type, goal, Outp):
     fig, ax = plt.subplots(figsize=(9, 6))
@@ -272,7 +237,7 @@ if __name__ == '__main__':
 
     container = []
 
-    # start = time.time()
+    start = time.time()
     for i in range(times):
         print(f'round: {i+1}')
         tic = time.time()
@@ -280,8 +245,9 @@ if __name__ == '__main__':
         Y_ = Init_case(Outp_, 5)
         Sim(goal, Outp_, Y_)
         container.append(Outp_)
+        print(time.time() - start)
         del Outp_
-    # print(f'time : {time.time() - start}')
-    # plot_result('IR', goal, container)
-    # plot_result('RT', goal, container)
-    # plot_result('Inf', goal, container)
+    print(f'time : {time.time() - start}')
+    plot_result('IR', goal, container)
+    plot_result('RT', goal, container)
+    plot_result('Inf', goal, container)
