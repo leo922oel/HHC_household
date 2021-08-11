@@ -20,7 +20,7 @@ nhh_ratio = 0.18
 trans_nhh = trans_hh * nhh_ratio
 mask_eff = 0.8
 t_end = 90
-
+a = []
 
 class Outp:
     def __init__(self) -> None:
@@ -42,14 +42,14 @@ def get_hh_size():
     return b
 
 def Init_case(Outp, init_inf):
-    Y = np.zeros((hh_total, hh_size), dtype=np.int64)
-    # Y = []
-    # b = get_hh_size()
-    # for i in range(len(b)):
-        # Y.append(np.zeros(b[i]))
-    # for i in range(init_inf):
-        # Y[i][0] = 1
-    Y[0:5, 0] = 1
+    # Y = np.zeros((hh_total, hh_size), dtype=np.int64)
+    # Y[0:5, 0] = 1
+    Y = []
+    b = get_hh_size()
+    for i in range(len(b)):
+        Y.append(np.zeros(b[i]))
+    for i in range(init_inf):
+        Y[i][0] = 1
     Outp.I[0] = np.sum(Y == 1)
     Outp.R[0] = np.sum(Y == 2)
     return Y
@@ -73,9 +73,11 @@ def multiproc_binom(type, sub_Y, param):
             else:
                 p_[i] = expon.cdf(1/gamma_rate, scale=1/(param * (n_I - sum))) if param * (n_I - sum) != 0 else 0
 
-    result = np.random.binomial(1, p_, [hh_size, len(sub_Y)])
+    result = []
+    for i in range(len(sub_Y)):
+        result.append(np.random.binomial(1, p_, len(sub_Y[i])))
 
-    return result.T
+    return result
     
 
 def Sim(goal, Outp, Y):
@@ -113,22 +115,14 @@ def Sim(goal, Outp, Y):
         # if t == t_end//2 + 1:
             # printLog(3, beta_hh, beta_nhh)
         
-        cpus = mp.cpu_count()
-        tasks = np.split(Y, cpus, axis=0)
-        pool = mp.Pool(processes=cpus)
-        results = pool.starmap(multiproc_binom, [(1, task, beta_hh) for task in tasks])
-        inc_hh = np.concatenate(results, axis=0)
-        results = pool.starmap(multiproc_binom, [(2, task, beta_nhh) for task in tasks])
-        inc_nhh = np.concatenate(results, axis=0)
-        results = pool.starmap(multiproc_binom, [(3, task, beta_hh) for task in tasks])
-        rt_hh = np.concatenate(results, axis=0)
-        results = pool.starmap(multiproc_binom, [(4, task, beta_nhh) for task in tasks])
-        rt_nhh = np.concatenate(results, axis=0)
+        # tasks = np.split(Y, 10, axis=0)
+        # pool = mp.pool.Pool(processes=10)
+        # results = pool.map(multiproc_binom, tasks)
 
-        # inc_hh = multiproc_binom(1, Y, beta_hh)
-        # inc_nhh = multiproc_binom(2, Y, beta_nhh)
-        # rt_hh = multiproc_binom(3, Y, beta_hh)
-        # rt_nhh = multiproc_binom(4, Y, beta_nhh)
+        inc_hh = multiproc_binom(1, Y, beta_hh)
+        inc_nhh = multiproc_binom(2, Y, beta_nhh)
+        rt_hh = multiproc_binom(3, Y, beta_hh)
+        rt_nhh = multiproc_binom(4, Y, beta_nhh)
 
         inc_hh = np.where(Y != 0, 0, inc_hh)
         inc_nhh = np.where(Y != 0, 0, inc_nhh)
@@ -138,16 +132,14 @@ def Sim(goal, Outp, Y):
         rt_nhh = np.where(rt_hh == 1, 0, rt_nhh)
 
         recover = np.random.binomial(1, expon.cdf(1, scale=1/gamma_rate), pop)
-        recover = recover.reshape(hh_total, hh_size)
-        # recover_shap = Y
-        # k=0
-        # for i in range(len(Y)):
-            # for j in range(len(Y[i])):
-                # recover_shap[i][j] = recover[k]
-                # k += 1
+        a.pop(0)
+        a.pop()
+        recover = np.hsplit(recover, a)
+
+        # recover = recover.reshape(hh_total, hh_size)
+
         Outp.rt_hh[t + 1] = np.sum(rt_hh) / np.sum(Y == 1)
         Outp.rt_nhh[t + 1] = np.sum(rt_nhh) / np.sum(Y == 1)
-
         Outp.inc_hh[t + 1] = np.sum(inc_hh)
         Outp.inc_nhh[t + 1] = np.sum(inc_nhh)
 
@@ -252,9 +244,9 @@ if __name__ == '__main__':
         Y_ = Init_case(Outp_, 5)
         Sim(goal, Outp_, Y_)
         container.append(Outp_)
+        print(time.time() - start)
         del Outp_
-    print(time.time() - start)
-
-    # plot_result('IR', goal, container)
-    # plot_result('RT', goal, container)
-    # plot_result('Inf', goal, container)
+    print(f'time : {time.time() - start}')
+    plot_result('IR', goal, container)
+    plot_result('RT', goal, container)
+    plot_result('Inf', goal, container)
