@@ -12,7 +12,7 @@
 
 ## 2021/08/11 progress
     Forget the last day record.
+    Now I use multiprocessing to improve the model.it can make 70% faster, which run 100 times by 90 days sim
+    need 2 hours now.
 
-    Now I use multiprocessing to improve the model.it can make 70% faster, which run 100 times by 90 days sim need 2 hours now.
-    
     Next I should try if I use dynamic allocating will slow the model. Then find the method to accelerate.
