@@ -43,20 +43,12 @@ def get_hh_size():
 
 def Init_case(Outp, init_inf):
     Y = np.zeros((hh_total, hh_size), dtype=np.int64)
-    # Y = []
-    # b = get_hh_size()
-    # for i in range(len(b)):
-        # Y.append(np.zeros(b[i]))
-    # for i in range(init_inf):
-        # Y[i][0] = 1
     Y[0:5, 0] = 1
     Outp.I[0] = np.sum(Y == 1)
     Outp.R[0] = np.sum(Y == 2)
     return Y
 
-
-def multiproc_binom(type, sub_Y, param):
-    n_I = np.sum(sub_Y == 1)
+def multiproc_binom(type, sub_Y, param, n_I):
     p_ = np.zeros(len(sub_Y))
     if type in [1, 2]:
         for i in range(len(sub_Y)):
@@ -113,22 +105,24 @@ def Sim(goal, Outp, Y):
         # if t == t_end//2 + 1:
             # printLog(3, beta_hh, beta_nhh)
         
-        cpus = mp.cpu_count()
-        tasks = np.split(Y, cpus, axis=0)
-        pool = mp.Pool(processes=cpus)
-        results = pool.starmap(multiproc_binom, [(1, task, beta_hh) for task in tasks])
-        inc_hh = np.concatenate(results, axis=0)
-        results = pool.starmap(multiproc_binom, [(2, task, beta_nhh) for task in tasks])
-        inc_nhh = np.concatenate(results, axis=0)
-        results = pool.starmap(multiproc_binom, [(3, task, beta_hh) for task in tasks])
-        rt_hh = np.concatenate(results, axis=0)
-        results = pool.starmap(multiproc_binom, [(4, task, beta_nhh) for task in tasks])
-        rt_nhh = np.concatenate(results, axis=0)
-
-        # inc_hh = multiproc_binom(1, Y, beta_hh)
-        # inc_nhh = multiproc_binom(2, Y, beta_nhh)
-        # rt_hh = multiproc_binom(3, Y, beta_hh)
-        # rt_nhh = multiproc_binom(4, Y, beta_nhh)
+        n_I = np.sum(Y == 1)
+        cpus = int(sys.argv[4])
+        if cpus != 1:
+            tasks = np.split(Y, cpus, axis=0)
+            pool = mp.Pool(processes=cpus)
+            results = pool.starmap(multiproc_binom, [(1, task, beta_hh, n_I) for task in tasks])
+            inc_hh = np.concatenate(results, axis=0)
+            results = pool.starmap(multiproc_binom, [(2, task, beta_nhh, n_I) for task in tasks])
+            inc_nhh = np.concatenate(results, axis=0)
+            results = pool.starmap(multiproc_binom, [(3, task, beta_hh, n_I) for task in tasks])
+            rt_hh = np.concatenate(results, axis=0)
+            results = pool.starmap(multiproc_binom, [(4, task, beta_nhh, n_I) for task in tasks])
+            rt_nhh = np.concatenate(results, axis=0)
+        else:
+            inc_hh = multiproc_binom(1, Y, beta_hh, n_I)
+            inc_nhh = multiproc_binom(2, Y, beta_nhh, n_I)
+            rt_hh = multiproc_binom(3, Y, beta_hh, n_I)
+            rt_nhh = multiproc_binom(4, Y, beta_nhh, n_I)
 
         inc_hh = np.where(Y != 0, 0, inc_hh)
         inc_nhh = np.where(Y != 0, 0, inc_nhh)
@@ -139,14 +133,9 @@ def Sim(goal, Outp, Y):
 
         recover = np.random.binomial(1, expon.cdf(1, scale=1/gamma_rate), pop)
         recover = recover.reshape(hh_total, hh_size)
-        # recover_shap = Y
-        # k=0
-        # for i in range(len(Y)):
-            # for j in range(len(Y[i])):
-                # recover_shap[i][j] = recover[k]
-                # k += 1
-        Outp.rt_hh[t + 1] = np.sum(rt_hh) / np.sum(Y == 1)
-        Outp.rt_nhh[t + 1] = np.sum(rt_nhh) / np.sum(Y == 1)
+        
+        Outp.rt_hh[t + 1] = np.sum(rt_hh) / n_I
+        Outp.rt_nhh[t + 1] = np.sum(rt_nhh) / n_I
 
         Outp.inc_hh[t + 1] = np.sum(inc_hh)
         Outp.inc_nhh[t + 1] = np.sum(inc_nhh)
@@ -165,7 +154,7 @@ def printLog(wave, beta_hh, beta_nhh):
     print("non-household = %.2e" % beta_nhh)
 
 
-def plot_result(type, goal, Outp):
+def plot_result(type, goal, Outp, info=None):
     fig, ax = plt.subplots(figsize=(9, 6))
     ax.axvline(t_end/2, 0, color='black', linestyle='--', lw=1)
     if type == 'IR':
@@ -176,10 +165,10 @@ def plot_result(type, goal, Outp):
             R.append(Outp[i].R)
             ax.plot(Outp[i].I / pop, color='red', \
                 # label='I', \
-                    linewidth=2, alpha=.1)
+                    linewidth=1, alpha=.1)
             ax.plot(Outp[i].R / pop, color='green', \
                 #label='R', \
-                    linewidth=2, alpha=.1)
+                    linewidth=1, alpha=.1)
 
         mean_I = np.mean(I, axis=0)
         mean_R = np.mean(R, axis=0)
@@ -198,13 +187,13 @@ def plot_result(type, goal, Outp):
             nhh.append(Outp[i].rt_nhh)
             ax.plot(Outp[i].rt_hh + Outp[i].rt_nhh, color='black', \
                 # label='total', \
-                    linewidth=2, alpha=.1)
+                    linewidth=1, alpha=.1)
             ax.plot(Outp[i].rt_hh, color='red', \
                 # label='household', \
-                    linewidth=2, alpha=.1)
+                    linewidth=1, alpha=.1)
             ax.plot(Outp[i].rt_nhh, color='green', \
                 # label='non-household', \
-                    linewidth=2, alpha=.1)
+                    linewidth=1, alpha=.1)
 
         mean_hh = np.mean(hh, axis=0)
         mean_nhh = np.mean(nhh, axis=0)
@@ -222,10 +211,10 @@ def plot_result(type, goal, Outp):
             nhh.append(Outp[i].inc_nhh)
             ax.plot(Outp[i].inc_hh, color='red', \
                 # label='household', \
-                    linewidth=2, alpha=.1)
+                    linewidth=1, alpha=.1)
             ax.plot(Outp[i].inc_nhh, color='green', \
                 # label='non-household', \
-                    linewidth=2, alpha=.1)
+                    linewidth=1, alpha=.1)
 
         mean_hh = np.mean(hh, axis=0)
         mean_nhh = np.mean(nhh, axis=0)
@@ -236,10 +225,12 @@ def plot_result(type, goal, Outp):
         ax.set_xlabel('Time(days)')
         ax.set_ylabel('# of new infections')
     # plt.show()
-    plt.savefig(f'{type}_goal_{goal}.png')
+    if info == None: plt.savefig(f'{type}_goal_{goal}.png')
+    else : plt.savefig(f'{type}_goal_{goal}_{info}.png')
 
 
 if __name__ == '__main__':
+    # python hh.py "goal" "hh_total" "times" "cpus" 
     goal = int(sys.argv[1])
 
     container = []
@@ -255,6 +246,6 @@ if __name__ == '__main__':
         del Outp_
     print(time.time() - start)
 
-    # plot_result('IR', goal, container)
-    # plot_result('RT', goal, container)
-    # plot_result('Inf', goal, container)
+    plot_result('IR', goal, container)
+    plot_result('RT', goal, container)
+    plot_result('Inf', goal, container)
