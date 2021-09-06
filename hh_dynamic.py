@@ -20,7 +20,7 @@ trans_hh = 1 / dur_infect
 nhh_ratio = 0.18
 trans_nhh = trans_hh * nhh_ratio
 mask_eff = 0.8
-t_end = 1
+t_end = 88
 a_ = []
 # seed = rd.seed()
 
@@ -45,38 +45,40 @@ def get_hh_size():
     return a, b
 
 def get_hh_size_modif():
-    size = 0
-    total = 0
+    total_ = 0
+    pop_ = 0
     record = np.zeros(5 + 1)
-    while size < hh_size:
-        times = np.random.randint(1, hh_size)
-        nums = np.random.randint(1, 5)
-        if size + times > hh_size:
-            times = hh_size - times
-        size += times
-        total += times * nums
+    while total_ < hh_total:
+        times = np.random.randint(1, hh_total//5)
+        nums = np.random.randint(1, 5+1)
+        if total_ + times > hh_total:
+            times = hh_total - total_
+        total_ += times
+        pop_ += times * nums
         record[nums] += times
     
-    return total, record
-
+    return pop_, record
 
 def Init_case(Outp, init_inf):
     Y = []
-    # total, record = get_hh_size_modif()
-    # for size in range(5):
+    pop_, record = get_hh_size_modif()
+    kind = len(record)-1
+    for size in range(kind):
+        if record[kind-size] != 0:
+            Y.append(np.zeros((int(record[kind-size]), kind-size), dtype=np.int32))
         # for i in range(record[5 - size]):
             # Y.append(np.zeros(5 - size))
-    a, b = get_hh_size()
-    for i in range(len(b)):
-        Y.append(np.zeros(b[i]))
-    for i in range(init_inf):
-        Y[i][0] = 1
+    # a, b = get_hh_size()
+    # a.pop(0)
+    # a.pop()
+    # for i in range(len(b)):
+        # Y.append(np.zeros(b[i]))
+    # for i in range(init_inf):
+    Y[0][0:init_inf, 0] = 1
     Outp.I[0] = np.sum(Y == 1)
     Outp.R[0] = np.sum(Y == 2)
 
-    a.pop(0)
-    a.pop()
-    return a, Y
+    return pop_, Y
 
 def list_split(lst : list, i : int):
     row = len(lst)
@@ -101,11 +103,15 @@ def multiproc_binom(type, sub_Y, param, n_I):
             else:
                 p_[i] = expon.cdf(1/gamma_rate, scale=1/(param * (n_I - sum))) if param * (n_I - sum) != 0 else 0
 
-    result = []
-    for i in range(len(sub_Y)):
-        result.append(np.random.binomial(1, p_[i], len(sub_Y[i])))
+    # result = []
+    # for i in range(len(sub_Y)):
+        # result.append(np.random.binomial(1, p_[i], len(sub_Y[i])))
+    result = np.random.binomial(1, p_, [len(sub_Y[0]), len(sub_Y)])
 
-    return result
+    return result.T
+
+# def binom_gpu():
+    
     
 def list_merge(lst : list):
     result = []
@@ -152,60 +158,56 @@ def Sim(goal, Outp, Y):
         
         n_I = 0
         for i in range(len(Y)):
-            n_I += np.sum(np.array(Y[i]) == 1)
+            # n_I += np.sum(np.array(Y[i]) == 1)
+            n_I += np.sum(Y[i] == 1)
 
         # tasks = np.split(Y, cpu, axis=0)
-        start = time.time()
-        tasks = list_split(Y, cpu)
+        # start = time.time()
+        # tasks = list_split(Y, cpu)
+        tasks = Y
+        cpu = len(Y)
         pool = mp.Pool(processes=cpu)
 
-        results = pool.starmap(multiproc_binom, [(1, task, beta_hh, n_I) for task in tasks])
-        # inc_hh = np.concatenate(results, axis=0)
-        inc_hh = list_merge(results)
-        results = pool.starmap(multiproc_binom, [(2, task, beta_nhh, n_I) for task in tasks])
-        # inc_nhh = np.concatenate(results, axis=0)
-        inc_nhh = list_merge(results)
-        results = pool.starmap(multiproc_binom, [(3, task, beta_hh, n_I) for task in tasks])
-        # rt_hh = np.concatenate(results, axis=0)
-        rt_hh = list_merge(results)
-        results = pool.starmap(multiproc_binom, [(4, task, beta_nhh, n_I) for task in tasks])
-        # rt_nhh = np.concatenate(results, axis=0)
-        rt_nhh = list_merge(results)
-        print(f'1 : {time.time()-start}')
+        inc_hh = pool.starmap(multiproc_binom, [(1, task, beta_hh, n_I) for task in tasks])
+        # inc_hh = list_merge(results)
+        inc_nhh = pool.starmap(multiproc_binom, [(2, task, beta_nhh, n_I) for task in tasks])
+        # inc_nhh = list_merge(results)
+        rt_hh = pool.starmap(multiproc_binom, [(3, task, beta_hh, n_I) for task in tasks])
+        # rt_hh = list_merge(results)
+        rt_nhh = pool.starmap(multiproc_binom, [(4, task, beta_nhh, n_I) for task in tasks])
+        # rt_nhh = list_merge(results)
+        # print(f'1 : {time.time()-start}')
 
         # inc_hh = multiproc_binom(1, Y, beta_hh, n_I)
         # inc_nhh = multiproc_binom(2, Y, beta_nhh, n_I)
         # rt_hh = multiproc_binom(3, Y, beta_hh, n_I)
         # rt_nhh = multiproc_binom(4, Y, beta_nhh, n_I)
 
-        start = time.time()
-        for i in range(hh_total):
+        for i in range(len(Y)):
             inc_hh[i] = np.where(Y[i] != 0, 0, inc_hh[i])
             inc_nhh[i] = np.where(Y[i] != 0, 0, inc_nhh[i])
             inc_nhh[i] = np.where(inc_hh[i] == 1, 0, inc_nhh[i])
             rt_hh[i] = np.where(Y[i] != 0, 0, rt_hh[i])
             rt_nhh[i] = np.where(Y[i] != 0, 0, rt_nhh[i])
             rt_nhh[i] = np.where(rt_hh[i] == 1, 0, rt_nhh[i])
-        print(f'2 : {time.time()-start}')
 
-        recover = np.random.binomial(1, expon.cdf(1, scale=1/gamma_rate), pop)
-        recover = np.hsplit(recover, a_)
+        recover = []
+        for i in range(len(Y)):
+            r = np.random.binomial(1, expon.cdf(1, scale=1/gamma_rate), [5-i, len(Y[i])])
+            recover.append(r.T)
+        
+        # recover = np.random.binomial(1, expon.cdf(1, scale=1/gamma_rate), pop)
+        # recover = np.hsplit(recover, a_)
 
-        # recover = recover.reshape(hh_total, hh_size)
-
-        start = time.time()
         sum_rt_hh = 0
         sum_rt_nhh = 0
         sum_inc_hh = 0
         sum_inc_nhh = 0
-        sum_rt_hh = sum(rt_hh)
-        print(sum_inc_hh)
-        for i in range(hh_total):
+        for i in range(len(Y)):
             sum_rt_hh += np.sum(rt_hh[i])
             sum_rt_nhh += np.sum(rt_nhh[i])
             sum_inc_hh += np.sum(inc_hh[i])
             sum_inc_nhh += np.sum(inc_nhh[i])
-        print(f'3 : {time.time()-start}')
 
         Outp.rt_hh[t + 1] = sum_rt_hh / n_I
         Outp.rt_nhh[t + 1] = sum_rt_nhh / n_I
@@ -214,13 +216,16 @@ def Sim(goal, Outp, Y):
 
         for i in range(len(Y)):
             for j in range(len(Y[i])):
-                if Y[i][j] == 0 and (inc_hh[i][j] == 1 or inc_nhh[i][j] == 1): Y[i][j] = 1
-                elif Y[i][j] == 1 and recover[i][j] == 1: Y[i][j] = 2
+                # if Y[i][j] == 0 and (inc_hh[i][j] == 1 or inc_nhh[i][j] == 1): Y[i][j] = 1
+                # elif Y[i][j] == 1 and recover[i][j] == 1: Y[i][j] = 2
+                for k in range(len(Y[i][j])):
+                    if Y[i][j, k] == 0 and (inc_hh[i][j, k] == 1 or inc_nhh[i][j, k] == 1): Y[i][j, k] = 1
+                    elif Y[i][j, k] == 1 and recover[i][j, k] == 1: Y[i][j, k] = 2
         
-        for i in range(hh_total):
+        for i in range(len(Y)):
             Outp.I[t + 1] += np.sum(Y[i] == 1)
             Outp.R[t + 1] += np.sum(Y[i] == 2)
-
+        
 
 def printLog(wave, beta_hh, beta_nhh):
     print(f'===transmission rate, survey wave {wave}===')
@@ -305,7 +310,7 @@ def plot_result(type, goal, Outp, info=None):
 
 if __name__ == '__main__':
     goal = int(sys.argv[1])
-    cpu = int(sys.argv[4])
+    # cpu = int(sys.argv[4])
 
     container = []
 
@@ -314,11 +319,11 @@ if __name__ == '__main__':
         print(f'round: {i+1}')
         tic = time.time()
         Outp_ = Outp()
-        a_, Y_ = Init_case(Outp_, 5)
+        pop, Y_ = Init_case(Outp_, 5)
         Sim(goal, Outp_, Y_)
         container.append(Outp_)
         del Outp_
     print(f'time : {time.time() - start}')
-    plot_result('IR', goal, container, 'test')
+    plot_result('IR', goal, container, 'dd_test')
     # plot_result('RT', goal, container)
     # plot_result('Inf', goal, container)

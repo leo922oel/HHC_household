@@ -163,17 +163,26 @@ def plot_result(type, goal, Outp, info=None):
         for i in range(len(Outp)):
             I.append(Outp[i].I)
             R.append(Outp[i].R)
-            ax.plot(Outp[i].I / pop, color='red', \
-                # label='I', \
-                    linewidth=1, alpha=.1)
-            ax.plot(Outp[i].R / pop, color='green', \
-                #label='R', \
-                    linewidth=1, alpha=.1)
+            if i == 0:
+                ax.plot(Outp[i].I / pop, color='red', \
+                    label='I', \
+                        linewidth=1, alpha=.3)
+                ax.plot(Outp[i].R / pop, color='green', \
+                    label='R', \
+                        linewidth=1, alpha=.3)
+            else:
+                ax.plot(Outp[i].I / pop, color='red', \
+                    # label='I', \
+                        linewidth=1, alpha=.3)
+                ax.plot(Outp[i].R / pop, color='green', \
+                    #label='R', \
+                        linewidth=1, alpha=.3)
 
         mean_I = np.mean(I, axis=0)
         mean_R = np.mean(R, axis=0)
         ax.plot(mean_I / pop, color='blue', label='maen I', linewidth=2, alpha=.6)
         ax.plot(mean_R / pop, color='orange', label='mean R', linewidth=2, alpha=.6)
+        
         ax.legend(loc='upper right')
         #ax.set_xlim([0, t_end])
         ax.set_title('IR')
@@ -185,15 +194,32 @@ def plot_result(type, goal, Outp, info=None):
         for i in range(len(Outp)):
             hh.append(Outp[i].rt_hh)
             nhh.append(Outp[i].rt_nhh)
-            ax.plot(Outp[i].rt_hh + Outp[i].rt_nhh, color='black', \
+            smooth_hh = np.zeros(t_end+1)
+            smooth_nhh = np.zeros(t_end+1)
+            for t in range(t_end+1):
+                if t <= 3 or t >= t_end-3:
+                    smooth_hh[t] = hh[i][t]
+                    smooth_nhh[t] = nhh[i][t]
+                else:
+                    smooth_hh[t] = np.mean(hh[i][t-3 : t+3])
+                    smooth_nhh[t] = np.mean(hh[i][t-3 : t+3]) 
+            # ax.plot(Outp[i].rt_hh + Outp[i].rt_nhh, color='black', \
                 # label='total', \
-                    linewidth=1, alpha=.1)
-            ax.plot(Outp[i].rt_hh, color='red', \
-                # label='household', \
-                    linewidth=1, alpha=.1)
-            ax.plot(Outp[i].rt_nhh, color='green', \
-                # label='non-household', \
-                    linewidth=1, alpha=.1)
+                    # linewidth=1, alpha=.1)
+            if i == 0:
+                ax.plot(smooth_hh, color='red', \
+                    label='household', \
+                        linewidth=1, alpha=.3)
+                ax.plot(smooth_nhh, color='green', \
+                    label='non-household', \
+                        linewidth=1, alpha=.3)
+            else:
+                ax.plot(smooth_hh, color='red', \
+                    # label='household', \
+                        linewidth=1, alpha=.3)
+                ax.plot(smooth_nhh, color='green', \
+                    # label='non-household', \
+                        linewidth=1, alpha=.3)
 
         mean_hh = np.mean(hh, axis=0)
         mean_nhh = np.mean(nhh, axis=0)
@@ -209,12 +235,20 @@ def plot_result(type, goal, Outp, info=None):
         for i in range(len(Outp)):
             hh.append(Outp[i].inc_hh)
             nhh.append(Outp[i].inc_nhh)
-            ax.plot(Outp[i].inc_hh, color='red', \
-                # label='household', \
-                    linewidth=1, alpha=.1)
-            ax.plot(Outp[i].inc_nhh, color='green', \
-                # label='non-household', \
-                    linewidth=1, alpha=.1)
+            if i == 0:
+                ax.plot(Outp[i].inc_hh, color='red', \
+                    label='household', \
+                        linewidth=1, alpha=.3)
+                ax.plot(Outp[i].inc_nhh, color='green', \
+                    label='non-household', \
+                        linewidth=1, alpha=.3)
+            else:
+                ax.plot(Outp[i].inc_hh, color='red', \
+                    # label='household', \
+                        linewidth=1, alpha=.3)
+                ax.plot(Outp[i].inc_nhh, color='green', \
+                    # label='non-household', \
+                        linewidth=1, alpha=.3)
 
         mean_hh = np.mean(hh, axis=0)
         mean_nhh = np.mean(nhh, axis=0)
@@ -242,10 +276,11 @@ if __name__ == '__main__':
         Outp_ = Outp()
         Y_ = Init_case(Outp_, 5)
         Sim(goal, Outp_, Y_)
+        print(time.time()-tic)
         container.append(Outp_)
         del Outp_
     print(time.time() - start)
 
-    plot_result('IR', goal, container)
-    plot_result('RT', goal, container)
-    plot_result('Inf', goal, container)
+    plot_result('IR', goal, container, 'test')
+    plot_result('RT', goal, container, 'test')
+    plot_result('Inf', goal, container, 'test')
