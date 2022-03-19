@@ -9,9 +9,9 @@ import multiprocessing as mp
 import sys
 
 hh_total = int(sys.argv[2])
-times = int(sys.argv[3])
+times = int(sys.argv[4])
 
-hh_size = 3
+hh_size = int(sys.argv[3])
 pop = hh_total * hh_size
 dur_infect = 5
 gamma_rate = 1 / dur_infect
@@ -106,7 +106,7 @@ def Sim(goal, Outp, Y):
             # printLog(3, beta_hh, beta_nhh)
         
         n_I = np.sum(Y == 1)
-        cpus = int(sys.argv[4])
+        cpus = int(sys.argv[5])
         if cpus != 1:
             tasks = np.split(Y, cpus, axis=0)
             pool = mp.Pool(processes=cpus)
@@ -134,8 +134,8 @@ def Sim(goal, Outp, Y):
         recover = np.random.binomial(1, expon.cdf(1, scale=1/gamma_rate), pop)
         recover = recover.reshape(hh_total, hh_size)
         
-        Outp.rt_hh[t + 1] = np.sum(rt_hh) / n_I
-        Outp.rt_nhh[t + 1] = np.sum(rt_nhh) / n_I
+        Outp.rt_hh[t + 1] = np.sum(rt_hh) / n_I if n_I != 0 else 0
+        Outp.rt_nhh[t + 1] = np.sum(rt_nhh) / n_I if n_I != 0 else 0
 
         Outp.inc_hh[t + 1] = np.sum(inc_hh)
         Outp.inc_nhh[t + 1] = np.sum(inc_nhh)
@@ -205,7 +205,7 @@ def plot_result(type, goal, Outp, info=None):
                     smooth_nhh[t] = np.mean(hh[i][t-3 : t+3]) 
             # ax.plot(Outp[i].rt_hh + Outp[i].rt_nhh, color='black', \
                 # label='total', \
-                    # linewidth=1, alpha=.1)
+                    # linewidth=1, alpha=.3)
             if i == 0:
                 ax.plot(smooth_hh, color='red', \
                     label='household', \
@@ -223,6 +223,7 @@ def plot_result(type, goal, Outp, info=None):
 
         mean_hh = np.mean(hh, axis=0)
         mean_nhh = np.mean(nhh, axis=0)
+        ax.plot(mean_hh+mean_nhh, color='black', label='mean total', linewidth=2, alpha=.6)
         ax.plot(mean_hh, color='blue', label='mean household', linewidth=2, alpha=.6)
         ax.plot(mean_nhh, color='orange', label='mean non-household', linewidth=2, alpha=.6)
         ax.legend(loc='upper right')
@@ -252,6 +253,7 @@ def plot_result(type, goal, Outp, info=None):
 
         mean_hh = np.mean(hh, axis=0)
         mean_nhh = np.mean(nhh, axis=0)
+        ax.plot(mean_hh+mean_nhh, color='black', label='mean total', linewidth=2, alpha=.6)
         ax.plot(mean_hh, color='blue', label='mean household', linewidth=2, alpha=.6)
         ax.plot(mean_nhh, color='orange', label='mean non-household', linewidth=2, alpha=.6)
         ax.legend(loc='upper right')
@@ -264,7 +266,7 @@ def plot_result(type, goal, Outp, info=None):
 
 
 if __name__ == '__main__':
-    # python hh.py "goal" "hh_total" "times" "cpus" 
+    # python hh.py "goal" "hh_total" "hh_size" "times" "cpus" 
     goal = int(sys.argv[1])
 
     container = []
@@ -277,10 +279,11 @@ if __name__ == '__main__':
         Y_ = Init_case(Outp_, 5)
         Sim(goal, Outp_, Y_)
         print(time.time()-tic)
+        # print(Outp_.rt_nhh)
         container.append(Outp_)
         del Outp_
     print(time.time() - start)
 
-    plot_result('IR', goal, container, 'test')
+    # plot_result('IR', goal, container, '3000')
     plot_result('RT', goal, container, 'test')
-    plot_result('Inf', goal, container, 'test')
+    # plot_result('Inf', goal, container, '3000')
