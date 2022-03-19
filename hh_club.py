@@ -9,8 +9,6 @@ import multiprocessing as mp
 import matplotlib.gridspec as gridspec
 import sys
 import os
-import epyestim
-import epyestim.covid19 as covid19
 
 hh_total = int(sys.argv[2])
 times = int(sys.argv[4])
@@ -47,7 +45,7 @@ def get_hh_size():
 
 def Init_case(Outp, init_inf):
     Y = np.zeros((hh_total, hh_size), dtype=np.int64)
-    Y[0:5, 0] = 1
+    Y[0:init_inf, 0] = 1
     Outp.I[0] = np.sum(Y == 1)
     Outp.R[0] = np.sum(Y == 2)
     return Y
@@ -331,13 +329,13 @@ def plot_result(type, goal, Outp, info=None):
 
 
 def merge_plot(Outp, ct_all, ct_hh, trans_hh, nhh_ratio):
-    fig, ax = plt.subplots(figsize=(9, 6))
-    ax.axvline(t_end/2, 0, color='black', linestyle='--', lw=1)
-    hh = []
-    nhh = []
+    hh, nhh = [], []
+    inc_hh, inc_nhh = [], []
     for i in range(len(Outp)):
         hh.append(Outp[i].rt_hh)
         nhh.append(Outp[i].rt_nhh)
+        inc_hh.append(Outp[i].inc_hh)
+        inc_nhh.append(Outp[i].inc_nhh)
         # smooth_hh = np.zeros(t_end+1)
         # smooth_nhh = np.zeros(t_end+1)
         # for t in range(t_end+1):
@@ -350,23 +348,26 @@ def merge_plot(Outp, ct_all, ct_hh, trans_hh, nhh_ratio):
         # ax.plot(Outp[i].rt_hh + Outp[i].rt_nhh, color='black', \
             # label='total', \
                 # linewidth=1, alpha=.1)
-        if i == 0:
-            ax.plot(Outp[i].rt_hh, color='red', \
-                label='household', \
-                    linewidth=1, alpha=.3)
-            ax.plot(Outp[i].rt_nhh, color='green', \
-                label='non-household', \
-                    linewidth=1, alpha=.3)
-        else:
-            ax.plot(Outp[i].rt_hh, color='red', \
+
+        # if i == 0:
+            # ax.plot(Outp[i].rt_hh, color='red', \
                 # label='household', \
-                    linewidth=1, alpha=.3)
-            ax.plot(Outp[i].rt_nhh, color='green', \
+                    # linewidth=1, alpha=.3)
+            # ax.plot(Outp[i].rt_nhh, color='green', \
                 # label='non-household', \
-                    linewidth=1, alpha=.3)
+                    # linewidth=1, alpha=.3)
+        # else:
+            # ax.plot(Outp[i].rt_hh, color='red', \
+                # label='household', \
+                    # linewidth=1, alpha=.3)
+            # ax.plot(Outp[i].rt_nhh, color='green', \
+                # label='non-household', \
+                    # linewidth=1, alpha=.3)
 
     mean_hh = np.mean(hh, axis=0)
     mean_nhh = np.mean(nhh, axis=0)
+    mean_inc_hh = np.mean(inc_hh, axis=0)
+    mean_inc_nhh = np.mean(inc_nhh, axis=0)
     maxRT = np.max(mean_hh + mean_nhh)
     Rhh = 0
     Rnhh = 0
@@ -376,15 +377,29 @@ def merge_plot(Outp, ct_all, ct_hh, trans_hh, nhh_ratio):
            Rnhh = mean_nhh[t]
            break
 
-    ax.plot(mean_hh+mean_nhh, color='black', label='mean total', linewidth=2, alpha=.6)
-    ax.plot(mean_hh, color='blue', label='mean household', linewidth=2, alpha=.6)
-    ax.plot(mean_nhh, color='orange', label='mean non-household', linewidth=2, alpha=.6)
-    ax.legend(loc='upper right')
-    ax.set_title(f'RT of {hh_total} * {hh_size}\nct_all: {ct_all} | ct_hh: {ct_hh} | trans_hh: {trans_hh} | nhh_ratio: {nhh_ratio} | Rhh= {round(Rhh, 2)} | Rnhh= {round(Rnhh, 2)}')
-    ax.set_xlabel('Time(days)')
-    ax.set_ylabel('RT rate')
+    fig, ax1 = plt.subplots(figsize=(9, 6))
+    # ax.axvline(t_end/2, 0, color='black', linestyle='--', lw=1)
+    plt.set_title(f'{hh_total} households with {hh_size} members')
+    plt.set_xlabel('Time(days)')
+    ax2 = ax1.twinx()
+    ax1.set_ylim([0, 20])
+    ax1.set_ylabel('RT rate')
+    ax1.plot(mean_hh+mean_nhh, color='black', label='mean total', linewidth=2, )
+    ax1.plot(mean_hh, color='green', label='mean household', linewidth=2, )
+    ax1.plot(mean_nhh, color='red', label='mean non-household', linewidth=2, )
+    ax1.legend(loc='center right')
 
-    save = f'./{hh_total}x{hh_size}_RT'
+    ax2.set_ylabel('# of infection per day')
+    ax2.plot(mean_inc_hh+mean_inc_nhh, color='black', marker='--', linewidth=5, alpha=.4)
+    ax2.plot(mean_inc_hh, color='green', marker='--', linewidth=5, alpha=.4)
+    ax2.plot(mean_inc_nhh, color='red', marker='--', linewidth=5, alpha=.4)
+
+    t = f"ct_hh: {ct_hh}, ct_nhh: {ct_all-ct_hh}\n"\
+            f"trans_hh: {trans_hh}, trans_nhh: {trans_hh*nhh_ratio} (nhh_tatio: {nhh_ratio})\n"\
+            f"Rt of hh = {round(Rhh, 2)}, Rt of nhh = {round(Rnhh, 2)}"
+    ax1.text(30, 15, t, fontsize=12, ha='left', wrap=True)
+
+    save = f'./{hh_total}x{hh_size}_RT_2'
     if not os.path.exists(save): os.mkdir(save)
     plt.savefig(f'{save}/{ct_all}_{ct_hh}_{trans_hh}_{nhh_ratio}.png')
     plt.close()
@@ -394,7 +409,7 @@ def plot_table(container):
     plt.table()
 
 if __name__ == '__main__':
-    # python hh.py "goal" "hh_total" "hh_size" "times" "cpus" 
+    # python hh_club.py "goal" "hh_total" "hh_size" "times" "cpus" 
     # run goal 2
     goal = int(sys.argv[1])
 
@@ -409,7 +424,6 @@ if __name__ == '__main__':
                     'trans_hh' : [.2, .3],
                     'nhh_rato' : [.25, .5]}
 
-    # g = covid19.generate_standard_si_distribution()
 
     for trans_hh in dataset['trans_hh']:
         for nhh_ratio in dataset['nhh_rato']:
@@ -420,10 +434,6 @@ if __name__ == '__main__':
                 for ct_all in dataset['ct_all']:
                     container = []
                     print(f"ct_all : {ct_all} ; ct_hh : {ct_hh}")
-                    # ghh = epyestim.distributions.discretise_gamma(1/gamma_rate, ct_hh*trans_hh)
-                    # gnhh = epyestim.distributions.discretise_gamma(1/gamma_rate, ((ct_all-ct_hh)*trans_nhh/pop)*mask_eff)
-                    # ghh = pd.Series(ghh)
-                    # gnhh = pd.Series(gnhh)
                     start = time.time()
                     for i in range(times):
                         Outp_ = Outp()
