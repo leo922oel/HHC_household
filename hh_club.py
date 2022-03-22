@@ -379,30 +379,33 @@ def merge_plot(Outp, ct_all, ct_hh, trans_hh, nhh_ratio):
 
     fig, ax1 = plt.subplots(figsize=(9, 6))
     # ax.axvline(t_end/2, 0, color='black', linestyle='--', lw=1)
-    plt.set_title(f'{hh_total} households with {hh_size} members')
-    plt.set_xlabel('Time(days)')
+    plt.title(f'{hh_total} households with {hh_size} members')
+    plt.xlabel('Time(days)')
     ax2 = ax1.twinx()
-    ax1.set_ylim([0, 20])
+    ax1.set_ylim([0, 6])
     ax1.set_ylabel('RT rate')
     ax1.plot(mean_hh+mean_nhh, color='black', label='mean total', linewidth=2, )
     ax1.plot(mean_hh, color='green', label='mean household', linewidth=2, )
     ax1.plot(mean_nhh, color='red', label='mean non-household', linewidth=2, )
     ax1.legend(loc='center right')
 
+    # ax2.set_ylim([0, 500])
     ax2.set_ylabel('# of infection per day')
-    ax2.plot(mean_inc_hh+mean_inc_nhh, color='black', marker='--', linewidth=5, alpha=.4)
-    ax2.plot(mean_inc_hh, color='green', marker='--', linewidth=5, alpha=.4)
-    ax2.plot(mean_inc_nhh, color='red', marker='--', linewidth=5, alpha=.4)
+    ax2.plot(mean_inc_hh+mean_inc_nhh, color='black', linestyle='--', linewidth=2, alpha=.3)
+    ax2.plot(mean_inc_hh, color='green', linestyle='--', linewidth=2, alpha=.3)
+    ax2.plot(mean_inc_nhh, color='red', linestyle='--', linewidth=2, alpha=.3)
 
-    t = f"ct_hh: {ct_hh}, ct_nhh: {ct_all-ct_hh}\n"\
-            f"trans_hh: {trans_hh}, trans_nhh: {trans_hh*nhh_ratio} (nhh_tatio: {nhh_ratio})\n"\
+    t = f"ct_hh: {ct_hh}, ct_nhh: {round(ct_all-ct_hh, 1)}\n"\
+            f"trans_hh: {trans_hh}, trans_nhh: {round(trans_hh*nhh_ratio, 2)} (nhh_tatio: {nhh_ratio})\n"\
             f"Rt of hh = {round(Rhh, 2)}, Rt of nhh = {round(Rnhh, 2)}"
-    ax1.text(30, 15, t, fontsize=12, ha='left', wrap=True)
+    ax1.text(22, 5, t, fontsize=10.5, ha='left', wrap=True)
 
-    save = f'./{hh_total}x{hh_size}_RT_2'
+    save = f'./nas/{hh_total}x{hh_size}_RT_2'
     if not os.path.exists(save): os.mkdir(save)
     plt.savefig(f'{save}/{ct_all}_{ct_hh}_{trans_hh}_{nhh_ratio}.png')
     plt.close()
+
+def Rt_curve(RT):
 
 def plot_table(container):
     fig = plt.subplots(figure=(9, 8))
