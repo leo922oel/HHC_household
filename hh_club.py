@@ -23,6 +23,7 @@ gamma_rate = 1 / dur_infect
 mask_eff = 0.8
 t_end = 50
 
+save = f'./nas/{hh_total}x{hh_size}_R'
 
 class Outp:
     def __init__(self) -> None:
@@ -328,7 +329,7 @@ def plot_result(type, goal, Outp, info=None):
     plt.close()
 
 
-def merge_plot(Outp, ct_all, ct_hh, trans_hh, nhh_ratio):
+def merge_plot(Outp, ct_all, ct_hh, trans_hh, nhh_ratio, defR):
     hh, nhh = [], []
     inc_hh, inc_nhh = [], []
     for i in range(len(Outp)):
@@ -366,19 +367,21 @@ def merge_plot(Outp, ct_all, ct_hh, trans_hh, nhh_ratio):
 
     mean_hh = np.mean(hh, axis=0)
     mean_nhh = np.mean(nhh, axis=0)
-    mean_inc_hh = np.mean(inc_hh, axis=0)
-    mean_inc_nhh = np.mean(inc_nhh, axis=0)
-    maxRT = np.max(mean_hh + mean_nhh)
-    Rhh = 0
-    Rnhh = 0
-    for t in range(t_end+1):
-       if mean_hh[t] + mean_nhh[t] == maxRT:
-           Rhh = mean_hh[t]
-           Rnhh = mean_nhh[t]
-           break
+    # mean_inc_hh = np.mean(inc_hh, axis=0)
+    # mean_inc_nhh = np.mean(inc_nhh, axis=0)
+    # maxRT = np.max(mean_hh + mean_nhh)
+    # Rhh = 0
+    # Rnhh = 0
+    # for t in range(t_end+1):
+    #    if mean_hh[t] + mean_nhh[t] == maxRT:
+        #    Rhh = mean_hh[t]
+        #    Rnhh = mean_nhh[t]
+        #    break
+    
 
     fig, ax1 = plt.subplots(figsize=(9, 6))
     # ax.axvline(t_end/2, 0, color='black', linestyle='--', lw=1)
+    plt.axhline(defR, color='black', linestyle='--', lw=1)
     plt.title(f'{hh_total} households with {hh_size} members')
     plt.xlabel('Time(days)')
     ax2 = ax1.twinx()
@@ -390,22 +393,48 @@ def merge_plot(Outp, ct_all, ct_hh, trans_hh, nhh_ratio):
     ax1.legend(loc='center right')
 
     # ax2.set_ylim([0, 500])
-    ax2.set_ylabel('# of infection per day')
-    ax2.plot(mean_inc_hh+mean_inc_nhh, color='black', linestyle='--', linewidth=2, alpha=.3)
-    ax2.plot(mean_inc_hh, color='green', linestyle='--', linewidth=2, alpha=.3)
-    ax2.plot(mean_inc_nhh, color='red', linestyle='--', linewidth=2, alpha=.3)
+    # ax2.set_ylabel('# of infection per day')
+    # ax2.plot(mean_inc_hh+mean_inc_nhh, color='black', linestyle='--', linewidth=2, alpha=.3)
+    # ax2.plot(mean_inc_hh, color='green', linestyle='--', linewidth=2, alpha=.3)
+    # ax2.plot(mean_inc_nhh, color='red', linestyle='--', linewidth=2, alpha=.3)
 
     t = f"ct_hh: {ct_hh}, ct_nhh: {round(ct_all-ct_hh, 1)}\n"\
-            f"trans_hh: {trans_hh}, trans_nhh: {round(trans_hh*nhh_ratio, 2)} (nhh_tatio: {nhh_ratio})\n"\
-            f"Rt of hh = {round(Rhh, 2)}, Rt of nhh = {round(Rnhh, 2)}"
+            f"trans_hh: {trans_hh}, trans_nhh: {round(trans_hh*nhh_ratio, 2)} (nhh_tatio: {nhh_ratio})\n"
     ax1.text(22, 5, t, fontsize=10.5, ha='left', wrap=True)
 
-    save = f'./nas/{hh_total}x{hh_size}_RT_2'
     if not os.path.exists(save): os.mkdir(save)
     plt.savefig(f'{save}/{ct_all}_{ct_hh}_{trans_hh}_{nhh_ratio}.png')
     plt.close()
 
-def Rt_curve(RT):
+    Rt_curve(mean_hh, mean_nhh, defR, ct_all, ct_hh, trans_hh, nhh_ratio)
+
+def Rt_curve(rt_hh, rt_nhh, defR, ct_all, ct_hh, trans_hh, nhh_ratio):
+    hh, nhh = [], []
+    for i in range(len(rt_hh)):
+        if i < len(rt_hh) - 10:
+            hh.append(np.mean(rt_hh[i:i+10]))
+            nhh.append(np.mean(rt_nhh[i:i+10]))
+    fig, ax = plt.subplots(figsize=(9, 6))
+    plt.title(f'{hh_total} households with {hh_size} members')
+    plt.xlabel('Time(days)')
+    plt.axhline(defR, color='black', linestyle='--', lw=1)
+    ax.set_ylim([0, 6])
+    ax.set_ylabel('RT rate')
+    ax.plot(hh+nhh, color='black', label='mean total', linewidth=2, )
+    ax.plot(hh, color='green', label='mean household', linewidth=2, )
+    ax.plot(nhh, color='red', label='mean non-household', linewidth=2, )
+    ax.legend(loc='center right')
+
+    if not os.path.exists(save): os.mkdir(save)
+
+    t = f"ct_hh: {ct_hh}, ct_nhh: {round(ct_all-ct_hh, 1)}\n"\
+            f"trans_hh: {trans_hh}, trans_nhh: {round(trans_hh*nhh_ratio, 2)} (nhh_tatio: {nhh_ratio})\n"
+    ax.text(22, 5, t, fontsize=10.5, ha='left', wrap=True)
+    plt.savefig(f'{save}/{ct_all}_{ct_hh}_{trans_hh}_{nhh_ratio}_10daysInter.png')
+    plt.close()
+
+# def display(Vector, ct_all, ct_hh, trans_hh, nhh_ratio):
+
 
 def plot_table(container):
     fig = plt.subplots(figure=(9, 8))
@@ -417,19 +446,19 @@ if __name__ == '__main__':
     goal = int(sys.argv[1])
 
     if hh_total == 4500:
-        dataset = {'ct_all' : [3, 4, 5, 9], 
+        dataset = {'ct_all' : [2, 4, 5, 9], 
                     'ct_hh' : [1.5, 1.8, 2],
                     'trans_hh' : [.2, .3],
-                    'nhh_rato' : [.25, .5]}
+                    'nhh_ratio' : [.25, .5]}
     else:
         dataset = {'ct_all' : [3, 4, 5, 9], 
                     'ct_hh' : [2.2, 2.5, 3],
                     'trans_hh' : [.2, .3],
-                    'nhh_rato' : [.25, .5]}
+                    'nhh_ratio' : [.25, .5]}
 
 
     for trans_hh in dataset['trans_hh']:
-        for nhh_ratio in dataset['nhh_rato']:
+        for nhh_ratio in dataset['nhh_ratio']:
             trans_nhh = trans_hh * nhh_ratio
             print(f"trans_hh : {trans_hh} ; nhh_ratio : {nhh_ratio}")
             # can12 = []
@@ -437,39 +466,23 @@ if __name__ == '__main__':
                 for ct_all in dataset['ct_all']:
                     container = []
                     print(f"ct_all : {ct_all} ; ct_hh : {ct_hh}")
+
+                    defR_hh = ct_hh * trans_hh * dur_infect
+                    defR_nhh = (ct_all - ct_hh) * trans_nhh * mask_eff * dur_infect
+                    defR = defR_nhh + defR_hh/(1+defR_hh)
+
                     start = time.time()
                     for i in range(times):
                         Outp_ = Outp()
                         Y_ = Init_case(Outp_, 5)
                         Sim(goal, Outp_, Y_, trans_hh, trans_nhh, ct_hh, ct_all)
-                        """
-                        thh = pd.Series(Outp_.inc_hh)
-                        tnhh = pd.Series(Outp_.inc_nhh)
-                        rhh = epyestim.estimate_r.estimate_r(
-                            infections_ts = thh,
-                            gt_distribution = g,
-                            a_prior = 1,
-                            b_prior = .5,
-                            window_size = 1
-                        )
-                        rhh = epyestim.estimate_r.gamma_quantiles(0.5, rhh['a_posterior'], rhh['b_posterior'])
-                        rnhh = epyestim.estimate_r.estimate_r(
-                            infections_ts = tnhh,
-                            gt_distribution = g,
-                            a_prior = 1,
-                            b_prior = .5,
-                            window_size = 1
-                        )
-                        rnhh = epyestim.estimate_r.gamma_quantiles(0.5, rnhh['a_posterior'], rnhh['b_posterior'])
-                        Outp_.r0_hh = rhh
-                        Outp_.r0_nhh = rnhh
-                        """
+
                         container.append(Outp_)
                         del Outp_
                     t = time.time() - start
                     print("%dh %dm %ds" % (t//3600, t//60, t%60))
-                    # plot_result('RT', goal, container, f'{trans_hh}_{nhh_ratio}_{ct_hh}_{ct_all}')
-                    merge_plot(container, ct_all, ct_hh, trans_hh, nhh_ratio)
+
+                    merge_plot(container, ct_all, ct_hh, trans_hh, nhh_ratio, defR)
                     # can12.append(container)
 
     # plot_result('IR', goal, container, 'test')
