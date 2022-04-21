@@ -13,7 +13,7 @@ t_end <- 2 # timeframe for simulation -- days
 
 plot_I_and_R <- function(I, R, filename) {
     i <- 1
-    png(paste(filename, ".png"), width = 640, height = 400)
+    png(paste0(filename, ".png"), width = 640, height = 400)
     for (i in 1:times) {
         t <- 0
         I[i][1] <- I[i][1] / pop
@@ -45,6 +45,7 @@ plot_I_and_R <- function(I, R, filename) {
     legend("topright", c("I", "R"),
             fill = c("red", "green"))
     abline(v = t_end / 2, col = "black", lty = 2)
+    # png(paste(filename, ".png"), width = 640, height = 400)
 
     return()
 }
@@ -274,6 +275,6 @@ for (i in 1:times) {
     mrt_nhh[i, ] <- Outp$rt_nhh
 }
 
-plot_I_and_R(mI, mR, "I_R_case1")
-plot_RT(mrt_hh, mrt_nhh, "RT_case1")
-plot_Inf(minc_hh, minc_nhh, "Inf_case1")
+plot_I_and_R(mI, mR, "I_R_test")
+# plot_RT(mrt_hh, mrt_nhh, "RT_case1")
+# plot_Inf(minc_hh, minc_nhh, "Inf_case1")
