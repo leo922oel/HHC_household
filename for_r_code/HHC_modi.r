@@ -54,6 +54,7 @@ plot_I_and_R <- function(I, R, filename) {
 
     return()
 }
+
 plot_meanRT <- function(rt_hh, rt_nhh, defR, defR_hh, defR_nhh, filename) {
     png(paste0(filename, "_meanRT.png"), width = 840, height = 600, type="cairo")
     mean_hh <- rep(0, t_end + 1)
@@ -195,6 +196,11 @@ if (hh_total == 3000) {
     ct_hh <- c(1, 1.5, 1.8, 2)
     trans_hh <- c(0.2, 0.3)
     nhh_ratio <- c(0.25, 0.5)
+} else {
+    ct_all <- c(3, 4, 5, 9)
+    ct_hh <- c(2, 5, 7, 9)
+    trans_hh <- c(0.2, 0.3)
+    nhh_ratio <- c(0.25, 0.5)
 }
 
 row <- 1
@@ -206,14 +212,13 @@ for (ct_all_ in ct_all) {
 
         ct_nhh <- ct_all_ - ct_hh_ # number of daily contacts for household
 
-        filename <- paste0("nas/",hh_total, "/", hh_total, "_", ct_all_, "_", ct_hh_, "_", hh_tr, "_", ratio_nhh)
         # filename <- paste0("nas/",hh_total, "/", hh_total, "_", row, "_", col)
         # png(paste0(filename, ".png"), width = 840, height = 600, type="cairo")
         # par(mfrow = c(length(trans_hh), length(nhh_ratio)))
 
         for (hh_tr in trans_hh) {
             for(ratio_nhh in nhh_ratio) {
-        	#filename <- paste0("nas/",hh_total, "/3000_", ct_all_, "_", ct_hh_, "_", hh_tr, "_", ratio_nhh)
+        	filename <- paste0("nas/",hh_total, "/", ct_all_, "_", ct_hh_, "_", hh_tr, "_", ratio_nhh)
         	#png(paste0(filename, ".png"), width = 840, height = 600, type="cairo")
                 trans_nhh <- hh_tr * ratio_nhh
                 beta_hh <- ct_hh_ * hh_tr
@@ -304,7 +309,7 @@ for (ct_all_ in ct_all) {
                 plot_meanRT(mrt_hh, mrt_nhh, defR, defR_hh, defR_nhh, filename)
                 plot_RT(mrt_hh, mrt_nhh, defR, filename)
                 plot_I_and_R(mI, mR, filename)
-                plot_Inf(minc_hh, minc_nhh, filename)
+                #plot_Inf(minc_hh, minc_nhh, filename)
             }
             
         }
