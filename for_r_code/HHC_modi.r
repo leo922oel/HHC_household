@@ -55,8 +55,7 @@ plot_I_and_R <- function(I, R, filename) {
     return()
 }
 
-plot_meanRT <- function(rt_hh, rt_nhh, defR, defR_hh, defR_nhh, filename) {
-    png(paste0(filename, "_meanRT.png"), width = 840, height = 600, type="cairo")
+write_meanRT <- function(rt_hh, rt_nhh, filename) {
     mean_hh <- rep(0, t_end + 1)
     mean_nhh <- rep(0, t_end + 1)
     for (i in 1:t_end+1) {
@@ -70,17 +69,6 @@ plot_meanRT <- function(rt_hh, rt_nhh, defR, defR_hh, defR_nhh, filename) {
     )
     write.csv(save.df, file=paste0(filename, "_mean.csv"))
 
-    plot((mean_hh + mean_nhh), col = "black", type = "l", xlab = "Time(Day)", ylab = "RT", lwd = 2)
-    lines(mean_hh, col = "red", lwd = 2)
-    lines(mean_nhh, col = "green", lwd = 2)
-    abline(h=defR, lty=2, col="black")
-    abline(h=defR_hh, lty=2, col="red")
-    abline(h=defR_nhh, lty=2, col="green")
-
-    legend("topright", c("total", "hh", "nhh"),
-           fill=c("black", "red", "green"))
- 
-    dev.off()
     return()
 }
 
@@ -197,8 +185,8 @@ if (hh_total == 3000) {
     trans_hh <- c(0.2, 0.3)
     nhh_ratio <- c(0.25, 0.5)
 } else {
-    ct_all <- c(3, 4, 5, 9)
-    ct_hh <- c(2, 5, 7, 9)
+    ct_all <- c(6, 8, 9, 11)
+    ct_hh <- c(2, 3, 4, 5)
     trans_hh <- c(0.2, 0.3)
     nhh_ratio <- c(0.25, 0.5)
 }
@@ -306,8 +294,8 @@ for (ct_all_ in ct_all) {
                 }
                 )
 
-                plot_meanRT(mrt_hh, mrt_nhh, defR, defR_hh, defR_nhh, filename)
-                plot_RT(mrt_hh, mrt_nhh, defR, filename)
+                write_meanRT(mrt_hh, mrt_nhh, filename)
+                # plot_RT(mrt_hh, mrt_nhh, defR, filename)
                 plot_I_and_R(mI, mR, filename)
                 #plot_Inf(minc_hh, minc_nhh, filename)
             }
@@ -320,4 +308,3 @@ for (ct_all_ in ct_all) {
     }
     row <- row + 1
 }
-
