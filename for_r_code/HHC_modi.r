@@ -11,10 +11,9 @@ gamma_rate <- 1 / dur_infect # recovery rate per day
 # nhh_ratio <- 0.18 # relative risk of transmission for non-household vs household
 # trans_nhh <- trans_hh * nhh_ratio # transmission probability for non-household
 mask_eff <- 0.8 # relative risk of mask wearing policy
-t_end <- 90 # timeframe for simulation -- days
+t_end <- 60 # timeframe for simulation -- days
 times <- 50
 
-#require(ggplot2)
 
 plot_I_and_R <- function(I, R, filename) {
     i <- 1
@@ -160,9 +159,6 @@ minc_nhh = matrix(0, times, t_end + 1)
 mrt_hh = matrix(0, times, t_end + 1)
 mrt_nhh = matrix(0, times, t_end + 1)
 
-#require(ggplot2)
-#png("IR.png", width = 640, height = 480)
-#plot_IR <- ggplot(data = Outp)
 
 # ct_all <- 9.14 # number of daily contacts for total
 # ct_hh <- 2.26 # number of daily contacts for household
@@ -174,22 +170,27 @@ mrt_nhh = matrix(0, times, t_end + 1)
 # transmission rate per day
 # for non-household (frequency-dependent)
 
-if (hh_total == 3000) {
-    ct_all <- c(3, 4, 5, 9)
-    ct_hh <- c(1, 1.5, 2, 2.5, 3)
-    trans_hh <- c(0.2, 0.3)
-    nhh_ratio <- c(0.25, 0.5)
-} else if (hh_total == 4500) {
-    ct_all <- c(2, 3, 4, 5, 9)
-    ct_hh <- c(1, 1.5, 1.8, 2)
-    trans_hh <- c(0.2, 0.3)
-    nhh_ratio <- c(0.25, 0.5)
-} else {
-    ct_all <- c(6, 8, 9, 11)
-    ct_hh <- c(2, 3, 4, 5)
-    trans_hh <- c(0.2, 0.3)
-    nhh_ratio <- c(0.25, 0.5)
-}
+# if (hh_total == 3000) {
+#     ct_all <- c(3, 4, 5, 9)
+#     ct_hh <- c(1, 1.5, 2, 2.5, 3)
+#     trans_hh <- c(0.2, 0.3)
+#     nhh_ratio <- c(0.25, 0.5)
+# } else if (hh_total == 4500) {
+#     ct_all <- c(2, 3, 4, 5, 9)
+#     ct_hh <- c(1, 1.5, 1.8, 2)
+#     trans_hh <- c(0.2, 0.3)
+#     nhh_ratio <- c(0.25, 0.5)
+# } else {
+#     ct_all <- c(6, 8, 9, 11)
+#     ct_hh <- c(2, 3, 4, 5)
+#     trans_hh <- c(0.2, 0.3)
+#     nhh_ratio <- c(0.25, 0.5)
+# }
+ct_all <- as.integer(args[3])
+ct_hh <- as.integer(args[4])
+trans_hh <- c(0.2, 0.3)
+nhh_ratio <- c(0.25, 0.5)
+
 
 row <- 1
 for (ct_all_ in ct_all) {

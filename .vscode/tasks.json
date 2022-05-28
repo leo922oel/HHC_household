@@ -18,7 +18,7 @@
         {
 			"label": "Run R code",
 			"type": "shell",
-			"command": "C:\\Program Files\\R\\R-4.1.1\bin\\x64\\rterm.exe",
+			"command": "D:\\R\\R-4.1.2\\bin\\x64\\rterm.exe",
 			"args": [
 				//"--no-restore",
 				//"--no-save",
