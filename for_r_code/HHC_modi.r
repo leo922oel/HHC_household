@@ -13,7 +13,7 @@ gamma_rate <- 1 / dur_infect # recovery rate per day
 mask_eff <- 0.8 # relative risk of mask wearing policy
 t_end <- 60 # timeframe for simulation -- days
 times <- 50
-
+set.seed(1000)
 
 plot_I_and_R <- function(I, R, filename) {
     i <- 1
@@ -54,15 +54,21 @@ plot_I_and_R <- function(I, R, filename) {
     return()
 }
 
-write_meanRT <- function(rt_hh, rt_nhh, filename) {
+write_meanRT <- function(I, R, rt_hh, rt_nhh, filename) {
+    mean_I <- rep(0, t_end + 1)
+    mean_R <- rep(0, t_end + 1)
     mean_hh <- rep(0, t_end + 1)
     mean_nhh <- rep(0, t_end + 1)
     for (i in 1:t_end+1) {
+        mean_I[i] <- mean(I[, i], na.rm=T)
+        mean_R[i] <- mean(R[, i], na.rm=T)
         mean_hh[i] <- mean(rt_hh[, i], na.rm=T)
         mean_nhh[i] <- mean(rt_nhh[, i], na.rm=T)
     }
 
     save.df <- data.frame(
+        mean_I = mean_I,
+        mean_R = mean_R,
         mean_hh = mean_hh,
         mean_nhh = mean_nhh
     )
@@ -170,24 +176,24 @@ mrt_nhh = matrix(0, times, t_end + 1)
 # transmission rate per day
 # for non-household (frequency-dependent)
 
-# if (hh_total == 3000) {
-#     ct_all <- c(3, 4, 5, 9)
-#     ct_hh <- c(1, 1.5, 2, 2.5, 3)
-#     trans_hh <- c(0.2, 0.3)
-#     nhh_ratio <- c(0.25, 0.5)
-# } else if (hh_total == 4500) {
-#     ct_all <- c(2, 3, 4, 5, 9)
-#     ct_hh <- c(1, 1.5, 1.8, 2)
-#     trans_hh <- c(0.2, 0.3)
-#     nhh_ratio <- c(0.25, 0.5)
-# } else {
-#     ct_all <- c(6, 8, 9, 11)
-#     ct_hh <- c(2, 3, 4, 5)
-#     trans_hh <- c(0.2, 0.3)
-#     nhh_ratio <- c(0.25, 0.5)
-# }
+if (hh_size == 3) {
+    # ct_all <- c(3, 4, 5, 9)
+    ct_hh <- c(1, 1.5, 2, 2.5, 3)
+    trans_hh <- c(0.2, 0.3)
+    nhh_ratio <- c(0.25, 0.5)
+} else if (hh_size == 2) {
+    # ct_all <- c(2, 3, 4, 5, 9)
+    ct_hh <- c(1, 1.5, 1.8, 2)
+    trans_hh <- c(0.2, 0.3)
+    nhh_ratio <- c(0.25, 0.5)
+} else {
+    # ct_all <- c(6, 8, 9, 11)
+    ct_hh <- c(2, 3, 4, 5)
+    trans_hh <- c(0.2, 0.3)
+    nhh_ratio <- c(0.25, 0.5)
+}
 ct_all <- as.integer(args[3])
-ct_hh <- as.integer(args[4])
+# ct_hh <- as.integer(args[4])
 trans_hh <- c(0.2, 0.3)
 nhh_ratio <- c(0.25, 0.5)
 
@@ -295,7 +301,7 @@ for (ct_all_ in ct_all) {
                 }
                 )
 
-                write_meanRT(mrt_hh, mrt_nhh, filename)
+                write_meanRT(mI, mR, mrt_hh, mrt_nhh, filename)
                 # plot_RT(mrt_hh, mrt_nhh, defR, filename)
                 plot_I_and_R(mI, mR, filename)
                 #plot_Inf(minc_hh, minc_nhh, filename)

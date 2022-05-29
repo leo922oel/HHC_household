@@ -1,9 +1,9 @@
 require("stringr")
 # args <- commandArgs(trailingOnly = TRUE)
 # hhstr <- as.integer(args[1])
-hhstr <- 30000
+hhstr <- 18000
 # path <- args[2]
-path <- "D:/user/Desktop/30000"
+path <- "D:/user/Desktop/18000"
 setwd(path)
 files <- list.files(pattern = ".csv")
 
@@ -12,11 +12,10 @@ gamma_rate <- 1 / dur_infect # recovery rate per day
 mask_eff <- 0.8 # relative risk of mask wearing policy
 
 # save_path <- paste0("/home/leo922oel/nas/", hhstr,"_new")
-save_path <- paste0("D:/user/Desktop/", hhstr,"_new")
+save_path <- paste0("D:/user/Desktop/", hhstr,"_Rt")
 if (!dir.exists(save_path)) dir.create(save_path)
 
 for (i in 1:length(files)) {
-# for (i in 1:1) {
     a <- str_split(files[i], pattern = "_", simplify = T)
     ct_all <- as.numeric(a[1])
     ct_hh <- as.numeric(a[2])
@@ -40,7 +39,7 @@ for (i in 1:length(files)) {
     mean.nhh <- file$mean_nhh[-1]
     mean.total <- mean.hh + mean.nhh
 
-    plot(mean.total, main = paste0("avg Rt of size ", hhstr), xlab = "Time(Day)", ylab = "Value of Rt", ylim = c(0, 8), type = "n", las = 2)
+    plot(mean.total, main = paste0("avg Rt of size ", hhstr), xlab = "Time(Day)", ylab = "Value of Rt", ylim = c(0, 8), type = "n", las = 1)
     lines(mean.total, col = "black", lwd = 2)
     lines(mean.hh, col = "red", lwd = 2)
     lines(mean.nhh, col = "green", lwd = 2)
@@ -57,6 +56,3 @@ for (i in 1:length(files)) {
     dev.off()
  
 }
-
-
-
