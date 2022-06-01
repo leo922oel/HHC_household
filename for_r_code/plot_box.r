@@ -1,23 +1,32 @@
 require("stringr")
+########### server args ###############
 # args <- commandArgs(trailingOnly = TRUE)
 # hhstr <- as.integer(args[1])
-hhstr <- 18000
 # path <- args[2]
+# save_path <- paste0("/home/leo922oel/nas/", hhstr,"_box")
+
+########### laptop given path ###############
+# hhstr <- 18000
+# path <- paste0("D:/user/Desktop/", hhstr)
+# save_path <- paste0("D:/user/Desktop/", hhstr,"_box")
+
+########### HHC-DT1 given path ###############
+# hhstr <- 18000
+ori_path <- "D:/Leo Chien/Desktop/"
 
 dur_infect <- 5 # infectiousness period = 5 days
 gamma_rate <- 1 / dur_infect # recovery rate per day
 mask_eff <- 0.8 # relative risk of mask wearing policy
 
-# save_path <- paste0("/home/leo922oel/nas/", hhstr,"_new")
-save_path <- paste0("D:/user/Desktop/", hhstr,"_box")
+save_path <- paste0(ori_path,"box")
 if (!dir.exists(save_path)) dir.create(save_path)
 
 class <- NA
 idx.peak <- NA
 Rt <- NA
-sizes <- [45000, 30000, 18000]
+sizes <- c(45000, 30000, 18000)
 for (size in sizes) {
-    path <- paste0("D/user/Desktop/", size)
+    path <- paste0(ori_path, size)
     setwd(path)
     files <- list.files(pattern = ".csv")
     class <- c(class, rep(as.integer(90000/45000), length(files)))
