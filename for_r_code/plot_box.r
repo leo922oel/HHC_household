@@ -22,6 +22,8 @@ save_path <- paste0(ori_path,"box")
 if (!dir.exists(save_path)) dir.create(save_path)
 
 class <- NA
+outbreak <- NA
+duration <- NA
 idx.peak <- NA
 Rt <- NA
 sizes <- c(45000, 30000, 18000)
@@ -30,12 +32,23 @@ for (size in sizes) {
     setwd(path)
     files <- list.files(pattern = ".csv")
     class <- c(class, rep(as.integer(90000/45000), length(files)))
+    outbreak.temp <- rep(0, length(files))
+    dura.temp <- rep(0, length(files))
     peak.temp <- rep(0, length(files))
     Rt.temp <- rep(0, length(files))
 
     for (i in 1:length(files)) {
         file <- read.csv(files[i], header = T, sep=",")
         mean.I <- file$mean_I
+        start <- 0
+        end <- 0
+        for (d in 1:length(mean.I)) {
+            t <- (mean.I[d+1] - mean.I[d]) / 
+            if ( <= mean.I[d+1]) start <- mean.I[d]
+            if (mean.I[d] >= 2*mean.I[d+1]) end <- mean.I[d+1]
+        }
+        outbreak.temp[i] <- start
+        dura.temp[i] <- end - start
         peak.temp[i] <- which.max(mean.I)
         mean.hh <- file$mean_hh[-1]
         mean.nhh <- file$mean_nhh[-1]
@@ -43,6 +56,8 @@ for (size in sizes) {
         Rt.temp[i] <- mean(mean.total[5:11])
     }
 
+    outbreak <- c(outbreak, outbreak.temp)
+    duration <- c(duration, dura.temp)
     idx.peak <- c(idx.peak, peak.temp)
     Rt <- c(Rt, Rt.temp)
 }
