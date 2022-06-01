@@ -29,7 +29,7 @@ for (size in sizes) {
     path <- paste0(ori_path, size)
     setwd(path)
     files <- list.files(pattern = ".csv")
-    class <- c(class, rep(as.integer(90000/45000), length(files)))
+    class <- c(class, rep(as.integer(90000/size), length(files)))
     peak.temp <- rep(0, length(files))
     Rt.temp <- rep(0, length(files))
 
@@ -46,10 +46,15 @@ for (size in sizes) {
     idx.peak <- c(idx.peak, peak.temp)
     Rt <- c(Rt, Rt.temp)
 }
+class <- class[-1]
+idx.peak <- idx.peak[-1]
+Rt <- Rt[-1]
 setwd(save_path)
 pngname <- "box_I.png"
 png(pngname, width = 840, height = 600, type="cairo")
-boxplot(idx.peak~class, main = "box plot of transmission peak ", xlab = "household size", ylab = "Time (Day)", ylim = c(0, 60), las = 1)
+plot(idx.peak~as.factor(class), main = "box plot of transmission peak ", #col = c("red", "green", "blue"), 
+        xlab = "household size", ylab = "Time (Day)", ylim = c(0, 60), las = 1, cex.main=2)
+# stripchart(idx.peak~as.factor(class), main = "box plot of transmission peak ", xlab = "household size", ylab = "Time (Day)", ylim = c(0, 60), las = 1)
         # abline(h=defR, lty=2, col="black", lwd = 2)
         # abline(h=defR_hh.2, lty=2, col="red", lwd = 2)
         # abline(h=defR_nhh, lty=2, col="green", lwd = 2)
@@ -62,4 +67,8 @@ dev.off()
 
 pngname <- "box_Rt.png"
 png(pngname, width = 840, height = 600, type="cairo")
-boxplot(Rt~class, main = "box plot of Rt", xlab = "household size", ylab = "Rt", ylim = c(0, 8), las = 1)
+plot(Rt~as.factor(class), main = "box plot of Rt", #col = c("red", "green", "blue"), 
+        xlab = "household size", ylab = "Rt", ylim = c(0, 6), las = 1, cex.main=2)
+# jitter_class <- jitter(as.factor(class))
+# points(Rt~jitter_class)
+dev.off()
