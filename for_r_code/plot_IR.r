@@ -6,16 +6,16 @@ require("stringr")
 # save_path <- paste0("/home/leo922oel/nas/", hhstr,"_IR")
 
 ########### laptop given path ###############
-# hhstr <- 18000
-# ori_path <- "D:/user/Desktop/"
-# path <- paste0(ori_path, hhstr)
-# save_path <- paste0(ori_path, hhstr,"_IR")
-
-########### HHC-DT1 given path ###############
-hhstr <- 18000
-ori_path <- "D:/Leo Chien/Desktop/"
+hhstr <- 45000
+ori_path <- "D:/user/Desktop/"
 path <- paste0(ori_path, hhstr)
 save_path <- paste0(ori_path, hhstr,"_IR")
+
+########### HHC-DT1 given path ###############
+#hhstr <- 18000
+#ori_path <- "D:/Leo Chien/Desktop/"
+#path <- paste0(ori_path, hhstr)
+#save_path <- paste0(ori_path, hhstr,"_IR")
 
 setwd(path)
 files <- list.files(pattern = ".csv")
