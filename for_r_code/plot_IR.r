@@ -2,20 +2,18 @@ require("stringr")
 ########### server args ###############
 # args <- commandArgs(trailingOnly = TRUE)
 # hhstr <- as.integer(args[1])
-# path <- args[2]
-# save_path <- paste0("/home/leo922oel/nas/", hhstr,"_IR")
+# ori_path <- args[2]
+# path <- paste0(ori_path, hhstr)
 
 ########### laptop given path ###############
 hhstr <- 45000
 ori_path <- "D:/user/Desktop/"
 path <- paste0(ori_path, hhstr)
-save_path <- paste0(ori_path, hhstr,"_IR")
 
 ########### HHC-DT1 given path ###############
 #hhstr <- 18000
 #ori_path <- "D:/Leo Chien/Desktop/"
 #path <- paste0(ori_path, hhstr)
-#save_path <- paste0(ori_path, hhstr,"_IR")
 
 setwd(path)
 files <- list.files(pattern = ".csv")
@@ -24,6 +22,7 @@ dur_infect <- 5 # infectiousness period = 5 days
 gamma_rate <- 1 / dur_infect # recovery rate per day
 mask_eff <- 0.8 # relative risk of mask wearing policy
 
+save_path <- paste0(ori_path, hhstr, "_IR")
 if (!dir.exists(save_path)) dir.create(save_path)
 
 for (i in 1:length(files)) {
