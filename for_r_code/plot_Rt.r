@@ -6,7 +6,7 @@ require("stringr")
 # path <- paste0(ori_path, hhstr)
 
 ########### laptop given path ###############
-hhstr <- 18000
+hhstr <- 10000
 ori_path <- "D:/user/Desktop/"
 path <- paste0(ori_path, hhstr)
 
@@ -43,13 +43,13 @@ for (i in 1:length(files)) {
     file <- read.csv(files[i], header = T, sep=",")
     setwd(save_path)
     pngname <- str_replace(files[i], pattern = "csv", replacement = "png")
-    png(pngname, width = 840, height = 600, type="cairo")
+    png(pngname, width = 840, height = 600, type="cairo", res=84)
 
     mean.hh <- file$mean_hh[-1]
     mean.nhh <- file$mean_nhh[-1]
     mean.total <- mean.hh + mean.nhh
 
-    plot(mean.total, main = paste0("avg Rt of size ", hhstr), xlab = "Time(Day)", ylab = "Value of Rt", ylim = c(0, 8), type = "n", las = 1)
+    plot(mean.total, main = paste0("avg Rt of size ", hhstr), xlab = "Time(Day)", ylab = "Value of Rt", ylim = c(0, 8), type = "n", las = 1, cex=1.5, xlim = c(0, 40))
     lines(mean.total, col = "black", lwd = 2)
     lines(mean.hh, col = "red", lwd = 2)
     lines(mean.nhh, col = "green", lwd = 2)
@@ -58,8 +58,8 @@ for (i in 1:length(files)) {
     abline(h=defR_hh.2, lty=2, col="red", lwd = 2)
     abline(h=defR_nhh, lty=2, col="green", lwd = 2)
 
-    text(45, 5, paste0("hh contact = ", ct_hh, " | nhh contact = ", ct_nhh,
-            "\nhh trans = ", trans_hh, " | nhh trans = ", trans_nhh), cex = 1.5, col = "blue")
+    text(20, 3, paste0("hh contact = ", ct_hh, " | nhh contact = ", ct_nhh,
+            "\nhh trans = ", trans_hh, " | nhh trans = ", trans_nhh), cex = 1.3, col = "blue")
     legend("topright", c("total", "hh", "nhh"),
            fill=c("black", "red", "green"), cex=1.8)
     

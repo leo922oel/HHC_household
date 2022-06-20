@@ -16,8 +16,8 @@ dur_infect <- 5 # infectiousness period = 5 days
 gamma_rate <- 1 / dur_infect # recovery rate per day
 mask_eff <- 0.8 # relative risk of mask wearing policy
 
-# sizes <- c(45000, 30000, 18000)
-sizes <- c(45000, 30000)
+sizes <- c(45000, 30000, 18000, 10000)
+# sizes <- c(45000, 30000)
 save_path <- paste0(ori_path,"box", length(sizes))
 if (!dir.exists(save_path)) dir.create(save_path)
 
@@ -89,9 +89,9 @@ Rt <- Rt[-1]
 
 setwd(save_path)
 pngname <- "box_peak.png"
-png(pngname, width = 840, height = 600, type="cairo")
+png(pngname, width = 840, height = 600, type="cairo", res=84)
 plot(idx.peak~as.factor(class), main = "box plot of transmission peak ", #col = c("red", "green", "blue"), 
-        xlab = "household size", ylab = "Time (Day)", ylim = c(0, 60), las = 1, cex.main=2, na.rm=T)
+        xlab = "household size", ylab = "Time (Day)", ylim = c(0, 60), las = 1, cex.main=2, cex.lab=1.3, cex.axis=1, na.rm=T)
 # stripchart(idx.peak~as.factor(class), main = "box plot of transmission peak ", xlab = "household size", ylab = "Time (Day)", ylim = c(0, 60), las = 1)
         # abline(h=defR, lty=2, col="black", lwd = 2)
         # abline(h=defR_hh.2, lty=2, col="red", lwd = 2)
@@ -104,9 +104,9 @@ plot(idx.peak~as.factor(class), main = "box plot of transmission peak ", #col = 
 dev.off()
 
 pngname <- "box_Rt.png"
-png(pngname, width = 840, height = 600, type="cairo")
+png(pngname, width = 840, height = 600, type="cairo", res=84)
 plot(Rt~as.factor(class), main = "box plot of Rt", #col = c("red", "green", "blue"), 
-        xlab = "household size", ylab = "Rt", ylim = c(0, 6), las = 1, cex.main=2, na.rm=T)
+        xlab = "household size", ylab = "Rt", ylim = c(0, 6), las = 1, cex.main=2, cex.lab=1.3, cex.axis=1, na.rm=T)
 # jitter_class <- jitter(as.factor(class))
 # points(Rt~jitter_class)
 dev.off()
@@ -120,9 +120,9 @@ dev.off()
 # dev.off()
 
 pngname <- "box_duration.png"
-png(pngname, width = 840, height = 600, type="cairo")
+png(pngname, width = 840, height = 600, type="cairo", res=84)
 plot(duration~as.factor(class), main = "box plot of duration", #col = c("red", "green", "blue"), 
-        xlab = "household size", ylab = "Duration (Days)", ylim = c(0, 60), las = 1, cex.main=2, na.rm=T)
+        xlab = "household size", ylab = "Duration (Days)", ylim = c(0, 60), las = 1, cex.main=2, cex.lab=1.3, cex.axis=1, na.rm=T)
 # jitter_class <- jitter(as.factor(class))
 # points(Rt~jitter_class)
 dev.off()

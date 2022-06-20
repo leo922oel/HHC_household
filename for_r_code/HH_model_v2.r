@@ -1,17 +1,44 @@
+"
+hh_total: total households
+hh_size: average number of household
+ct_all: contact rate for all
+ct_hh: contact rate for household
+ct_nhh: number of daily contacts for non household
+pop: population
+dur_infect: infectiousness period (days)
+gamma_rate: recovery rate per day
+trans_hh: transmission probability for household
+nhh_ratio: relative risk of transmission for non-household vs household
+trans_nhh: transmission probability for non-household
+mask_eff: relative risk of mask wearing policy
+t_end: timeframe for simulation -- days
+times: # of simulation
+
+beta_hh: transmission rate per day for household (density-dependent)
+beta_nhh: transmission rate per day for non-household (frequency-dependent)
+"
+########### server args ###############
 args <- commandArgs(trailingOnly = TRUE)
 hh_total <- as.integer(args[1])
-# hh_total <- 3000 # total households
 hh_size <- as.integer(args[2])
-if (!dir.exists(paste0("nas/", hh_total))) dir.create(paste0("nas/", hh_total))
+ct_all <- as.integer(args[3])
+# ct_hh <- as.numeric(args[4])
+savepath <- "nas/"
+
+########### given params ###############
+# hh_total <- 3000 # total households
 # hh_size <- 3 # average number of household
-pop <- hh_total * hh_size # total population
-dur_infect <- 5 # infectiousness period = 5 days
-gamma_rate <- 1 / dur_infect # recovery rate per day
-# trans_hh <- 1 / dur_infect # transmission probability for household
-# nhh_ratio <- 0.18 # relative risk of transmission for non-household vs household
-# trans_nhh <- trans_hh * nhh_ratio # transmission probability for non-household
-mask_eff <- 0.8 # relative risk of mask wearing policy
-t_end <- 90 # timeframe for simulation -- days
+# savepath <- "nas/"
+
+if (!dir.exists(paste0(savepath, hh_total))) dir.create(paste0(savepath, hh_total))
+pop <- hh_total * hh_size 
+dur_infect <- 5
+gamma_rate <- 1 / dur_infect
+# trans_hh <- 1 / dur_infect
+# nhh_ratio <- 0.18
+# trans_nhh <- trans_hh * nhh_ratio
+mask_eff <- 0.8
+t_end <- 90
 times <- 50
 
 plot_I_and_R <- function(I, R, filename) {
@@ -49,7 +76,6 @@ plot_I_and_R <- function(I, R, filename) {
             fill = c("red", "green"))
     # abline(v = t_end / 2, col = "black", lty = 2)
     dev.off()
-
     return()
 }
 
@@ -72,7 +98,6 @@ write_meanRT <- function(I, R, rt_hh, rt_nhh, filename) {
         mean_nhh = mean_nhh
     )
     write.csv(save.df, file=paste0(filename, "_mean.csv"))
-
     return()
 }
 
@@ -140,8 +165,8 @@ plot_Inf <- function(inc_hh, inc_nhh, filename) {
     legend("topright", c("hh", "nhh"),
             fill=c("red", "green"))
     # abline(v = t_end / 2, col = "black", lty = 2)
-    dev.off()
 
+    dev.off()
     return()
 }
 
@@ -165,15 +190,9 @@ mrt_hh = matrix(0, times, t_end + 1)
 mrt_nhh = matrix(0, times, t_end + 1)
 
 
-# ct_all <- 9.14 # number of daily contacts for total
-# ct_hh <- 2.26 # number of daily contacts for household
 # ct_nhh <- ct_all - ct_hh # number of daily contacts for household
 # beta_hh <- ct_hh * trans_hh
-# transmission rate per day
-# for household (density-dependent)
 # beta_nhh <- ct_nhh * trans_nhh / pop
-# transmission rate per day
-# for non-household (frequency-dependent)
 
 if (hh_size == 3) {
     # ct_all <- c(3, 4, 5, 9)
@@ -189,8 +208,6 @@ if (hh_size == 3) {
     ct_hh <- c(3, 5, 7, 9)
 }
 
-ct_all <- as.integer(args[3])
-# ct_hh <- as.integer(args[4])
 trans_hh <- c(0.2, 0.3)
 nhh_ratio <- c(0.25, 0.5)
 
