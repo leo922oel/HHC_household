@@ -41,8 +41,8 @@ mask_eff <- 0.8
 t_end <- 90
 times <- 50
 
+### plot cumulative Infection and Recover cases for each epoch
 plot_I_and_R <- function(I, R, filename) {
-    i <- 1
     png(paste0(filename, "_IR.png"), width = 840, height = 600, type="cairo")
     for (i in 1:times) {
         t <- 0
@@ -79,6 +79,7 @@ plot_I_and_R <- function(I, R, filename) {
     return()
 }
 
+### store mean statistic as .csv file
 write_meanRT <- function(I, R, rt_hh, rt_nhh, filename) {
     mean_I <- rep(0, t_end + 1)
     mean_R <- rep(0, t_end + 1)
@@ -101,6 +102,7 @@ write_meanRT <- function(I, R, rt_hh, rt_nhh, filename) {
     return()
 }
 
+### plot daily Rt for each epoch
 plot_RT <- function(rt_hh, rt_nhh, defR, filename) {
     png(paste0(filename, "_RT.png"), width = 840, height = 600, type="cairo")
     for (i in 1:times) {
@@ -136,8 +138,8 @@ plot_RT <- function(rt_hh, rt_nhh, defR, filename) {
     return()
 }
 
+### plot daily Infection for each epoch
 plot_Inf <- function(inc_hh, inc_nhh, filename) {
-    i <- 1
     png(paste0(filename, "_Inf.png"), width = 840, height = 600, type="cairo")
     for (i in 1:times) {
         if (i == 1) {
@@ -170,8 +172,7 @@ plot_Inf <- function(inc_hh, inc_nhh, filename) {
     return()
 }
 
-i <- 1
-
+### container to store data of one epoch
 Outp <- data.frame(
     Time = 0 : t_end,
     I = rep(0, t_end + 1),
@@ -182,6 +183,7 @@ Outp <- data.frame(
     rt_nhh = rep(0, t_end + 1)
 )
 
+### matrix for statistic analysis
 mI = matrix(0, times, t_end + 1)
 mR = matrix(0, times, t_end + 1)
 minc_hh = matrix(0, times, t_end + 1)
@@ -189,60 +191,59 @@ minc_nhh = matrix(0, times, t_end + 1)
 mrt_hh = matrix(0, times, t_end + 1)
 mrt_nhh = matrix(0, times, t_end + 1)
 
-
-# ct_nhh <- ct_all - ct_hh # number of daily contacts for household
 # beta_hh <- ct_hh * trans_hh
 # beta_nhh <- ct_nhh * trans_nhh / pop
 
+###　household structure set up
 if (hh_size == 3) {
     # ct_all <- c(3, 4, 5, 9)
-    ct_hh <- c(1, 1.5, 2, 2.5, 3)
+    ct_hh.set <- c(1, 1.5, 2, 2.5, 3)
 } else if (hh_size == 2) {
     # ct_all <- c(2, 3, 4, 5, 9)
-    ct_hh <- c(1, 1.5, 1.8, 2)
+    ct_hh.set <- c(1, 1.5, 1.8, 2)
 } else if (hh_size == 5){
     # ct_all <- c(6, 8, 9, 11)
-    ct_hh <- c(2, 3, 4, 5)
+    ct_hh.set <- c(2, 3, 4, 5)
 } else {
     # ct_all <- c(10, 12, 13, 15)
-    ct_hh <- c(3, 5, 7, 9)
+    ct_hh.set <- c(3, 5, 7, 9)
 }
 
-trans_hh <- c(0.2, 0.3)
-nhh_ratio <- c(0.25, 0.5)
+trans_hh.set <- c(0.2, 0.3)
+nhh_ratio.set <- c(0.25, 0.5)
 
-
-row <- 1
-for (ct_all_ in ct_all) {
-    col <- 1
-    for (ct_hh_ in ct_hh) {
-        print(paste0("ct_hh: ", ct_hh_, "   ct_all: ", ct_all_))
+### Simulation
+### state >> 0: susceptible, 1: infectious, 2: recovery
+for (ct_all in ct_all.set) {
+    for (ct_hh in ct_hh.set) {
+        print(paste0("ct_hh: ", ct_hh, "   ct_all: ", ct_all))
         print("-----------------------------")
 
-        ct_nhh <- ct_all_ - ct_hh_ # number of daily contacts for household
+        ct_nhh <- ct_all - ct_hh
 
         # filename <- paste0("nas/",hh_total, "/", hh_total, "_", row, "_", col)
         # png(paste0(filename, ".png"), width = 840, height = 600, type="cairo")
         # par(mfrow = c(length(trans_hh), length(nhh_ratio)))
 
-        for (hh_tr in trans_hh) {
-            for(ratio_nhh in nhh_ratio) {
-            set.seed(1000)
-        	filename <- paste0("nas/",hh_total, "/", ct_all_, "_", ct_hh_, "_", hh_tr, "_", ratio_nhh)
-        	#png(paste0(filename, ".png"), width = 840, height = 600, type="cairo")
-                trans_nhh <- hh_tr * ratio_nhh
-                beta_hh <- ct_hh_ * hh_tr
+        for (trans_hh in trans_hh.set) {
+            for(nhh_ratio in nhh_ratio.set) {
+                set.seed(1000)
+        	    filename <- paste0("nas/",hh_total, "/", ct_all, "_", ct_hh, "_", trans_hh, "_", nhh_ratio)
+        	    #png(paste0(filename, ".png"), width = 840, height = 600, type="cairo")
+                trans_nhh <- trans_hh * nhh_ratio
+                beta_hh <- ct_hh * trans_hh
                 beta_nhh <- (ct_nhh * trans_nhh / pop) * mask_eff
 
                 defR_nhh <- ct_nhh * trans_nhh * mask_eff * dur_infect
-                defR_hh <- ct_hh_ * hh_tr * dur_infect
-                defR <- defR_nhh + defR_hh/(1+defR_hh)
+                defR_hh <- ct_hh * trans_hh * dur_infect
+                defR <- defR_nhh + defR_hh / ( 1 + defR_hh)
 
-                print(paste0("trans_hh: ", hh_tr, "   nhh_ratio: ", ratio_nhh))
+                print(paste0("trans_hh: ", trans_hh, "   nhh_ratio: ", nhh_ratio))
 
-                system.time(
-                for (i in 1:times) {
+                for (i in 1:times) { ### epoch
                     print(paste0("round = ", sprintf("%d", i)))
+
+                    ### Initialize the container
                     Outp$I <- rep(0, t_end + 1)
                     Outp$R <- rep(0, t_end + 1)
                     Outp$inc_hh <- rep(0, t_end + 1)
@@ -251,15 +252,15 @@ for (ct_all_ in ct_all) {
                     Outp$rt_nhh <- rep(0, t_end + 1)
 
                     t <- 0
-                    Y <- matrix(0, hh_total, hh_size)
+                    Y <- matrix(0, hh_total, hh_size) ### store daily healthy state
                     Y[1:5, 1] <- 1
-                    Outp$I[1] <- sum(Y == 1)
-                    Outp$R[1] <- sum(Y == 2)
-                    Outp$inf_hh_0[1] <- table(rowSums((Y == 1) | (Y == 2)))[1]
-                    Outp$inf_hh_1[1] <- table(rowSums((Y == 1) | (Y == 2)))[2]
+                    Outp$I[0] <- sum(Y == 1)
+                    Outp$R[0] <- sum(Y == 2)
+                    Outp$inf_hh_0[0] <- table(rowSums((Y == 1) | (Y == 2)))[1]
+                    Outp$inf_hh_1[0] <- table(rowSums((Y == 1) | (Y == 2)))[2]
 
-                    for (t in 1:t_end) {
-                        # case1 : huosehold transmission
+                    for (t in 0:t_end) {
+                        # case1 : household transmission
                         # -- occurs when there are both susceptible & infectious in a household
                         # -- depends on (household transmission rate) * (case in the same household)
                         inc_hh <- t(apply(Y, 1, function(y) {
@@ -314,7 +315,6 @@ for (ct_all_ in ct_all) {
                     mrt_hh[i, ] <- Outp$rt_hh
                     mrt_nhh[i, ] <- Outp$rt_nhh
                 }
-                )
 
                 write_meanRT(mI, mR, mrt_hh, mrt_nhh, filename)
                 # plot_RT(mrt_hh, mrt_nhh, defR, filename)
@@ -326,7 +326,5 @@ for (ct_all_ in ct_all) {
         # legend("topright", c("total", "hh", "nhh"),
                     # fill=c("black", "red", "green"))
         # dev.off()
-        col <- col+1
     }
-    row <- row + 1
 }
